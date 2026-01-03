@@ -259,9 +259,47 @@ function handleManualSearch() {
     }
 }
 
+// Extract shipment number from QR code text
+function extractShipmentNumber(qrText) {
+    // Log the raw QR text for debugging
+    console.log('QR Code escaneado:', qrText);
+
+    // Try to extract number from URL patterns
+    // Example: https://www.mercadolibre.com.co/...?shipment=46189809667
+    const urlMatch = qrText.match(/shipment[=:](\d+)/i);
+    if (urlMatch) {
+        console.log('Número extraído de URL:', urlMatch[1]);
+        return urlMatch[1];
+    }
+
+    // Try to extract from tracking URL pattern
+    // Example: https://mercadolibre.com/tracking/46189809667
+    const trackingMatch = qrText.match(/tracking[\/:](\d+)/i);
+    if (trackingMatch) {
+        console.log('Número extraído de tracking:', trackingMatch[1]);
+        return trackingMatch[1];
+    }
+
+    // Try to find any sequence of 10-12 digits (typical shipment number length)
+    const digitMatch = qrText.match(/\d{10,12}/);
+    if (digitMatch) {
+        console.log('Número extraído (secuencia de dígitos):', digitMatch[0]);
+        return digitMatch[0];
+    }
+
+    // If no pattern matches, return the original text trimmed
+    console.log('Usando texto original:', qrText.trim());
+    return qrText.trim();
+}
+
 // Search pedido
-async function searchPedido(numeroEnvio) {
+async function searchPedido(scannedText) {
     try {
+        // Extract the shipment number from the scanned text
+        const numeroEnvio = extractShipmentNumber(scannedText);
+
+        console.log('Buscando pedido con número:', numeroEnvio);
+
         const q = query(
             collection(db, 'pedidos_flex'),
             where('numero_envio', '==', numeroEnvio)
@@ -270,7 +308,8 @@ async function searchPedido(numeroEnvio) {
         const querySnapshot = await getDocs(q);
 
         if (querySnapshot.empty) {
-            showNotification('Pedido no encontrado', 'error');
+            showNotification(`Pedido no encontrado: ${numeroEnvio}`, 'error');
+            console.log('No se encontró pedido con número:', numeroEnvio);
             return;
         }
 
@@ -279,6 +318,8 @@ async function searchPedido(numeroEnvio) {
             id: pedidoDoc.id,
             ...pedidoDoc.data()
         };
+
+        console.log('Pedido encontrado:', currentPedido);
 
         // Check if already delivered
         if (currentPedido.estado === 'entregado') {

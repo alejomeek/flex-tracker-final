@@ -15,7 +15,7 @@ const firebaseConfig = {
     apiKey: "AIzaSyD9sKuqivGZryt7Ol33WtUpsM5Q0eARNR4",
     authDomain: "flex-tracker-ce54b.firebaseapp.com",
     projectId: "flex-tracker-ce54b",
-    storageBucket: "flex-tracker-ce54b.appspot.com",
+    storageBucket: "flex-tracker-ce54b.firebasestorage.app",
     messagingSenderId: "617822125610",
     appId: "1:617822125610:web:ce2265cef161b7c7e10d53"
 };
