@@ -1,0 +1,27 @@
+{
+    "rewrites": [
+        {
+            "source": "/dashboard",
+            "destination": "/dashboard/index.html"
+        },
+        {
+            "source": "/mobile",
+            "destination": "/mobile/index.html"
+        }
+    ],
+    "headers": [
+        {
+            "source": "/mobile/sw.js",
+            "headers": [
+                {
+                    "key": "Service-Worker-Allowed",
+                    "value": "/"
+                },
+                {
+                    "key": "Content-Type",
+                    "value": "application/javascript"
+                }
+            ]
+        }
+    ]
+}

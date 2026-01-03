@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#3b82f6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Flex Tracker - Repartidor</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <!-- Screen 1: Login/Selection -->
+    <div id="screenLogin" class="screen active">
+        <div class="login-container">
+            <div class="logo">📦</div>
+            <h1 class="app-title">Flex Tracker</h1>
+            <p class="subtitle">Sistema de entregas</p>
+
+            <div class="login-form">
+                <label for="selectRepartidor">Selecciona tu nombre:</label>
+                <select id="selectRepartidor" class="select-input">
+                    <option value="">-- Seleccionar --</option>
+                </select>
+                <button id="btnLogin" class="btn btn-primary btn-large" disabled>Iniciar Sesión</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Screen 2: Scanner Principal -->
+    <div id="screenScanner" class="screen">
+        <header class="app-header">
+            <div class="header-content">
+                <div class="header-left">
+                    <h2 class="greeting" id="greetingText">Hola, Repartidor</h2>
+                    <div class="mini-stats">
+                        <span class="stat-item">
+                            <span class="stat-label">Pendientes:</span>
+                            <span class="stat-number" id="statPendingToday">0</span>
+                        </span>
+                        <span class="stat-divider">|</span>
+                        <span class="stat-item">
+                            <span class="stat-label">Entregados:</span>
+                            <span class="stat-number" id="statDeliveredToday">0</span>
+                        </span>
+                    </div>
+                </div>
+                <button class="btn-logout" id="btnLogout" title="Cerrar sesión">🚪</button>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="scanner-section">
+                <button class="btn btn-primary btn-large btn-scan" id="btnStartScan">
+                    📷 Escanear Pedido
+                </button>
+
+                <div id="scannerContainer" class="scanner-container" style="display: none;">
+                    <div class="scanner-header">
+                        <h3>Escanear código QR</h3>
+                        <button class="btn-close-scanner" id="btnCloseScanner">✕</button>
+                    </div>
+                    <div id="qrReader" class="qr-reader"></div>
+                    <p class="scanner-hint">Enfoca el código QR de la etiqueta</p>
+                </div>
+
+                <div class="manual-input">
+                    <p class="manual-label">O ingresa el número manualmente:</p>
+                    <div class="manual-form">
+                        <input type="text" id="inputManualNumber" placeholder="Número de envío"
+                            class="manual-input-field">
+                        <button class="btn btn-secondary" id="btnManualSearch">Buscar</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Screen 3: Pedido Encontrado -->
+    <div id="screenPedido" class="screen">
+        <header class="app-header">
+            <div class="header-content">
+                <button class="btn-back" id="btnBackToScanner">← Volver</button>
+                <h2>Detalles del Pedido</h2>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="pedido-card">
+                <div class="pedido-header">
+                    <div class="pedido-serial" id="pedidoSerial">#000</div>
+                    <div class="pedido-status" id="pedidoStatus"></div>
+                </div>
+
+                <div class="pedido-info">
+                    <div class="info-row">
+                        <span class="info-label">N° Envío:</span>
+                        <span class="info-value" id="pedidoNumeroEnvio">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">N° Venta:</span>
+                        <span class="info-value" id="pedidoNumeroVenta">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Destinatario:</span>
+                        <span class="info-value" id="pedidoDestinatario">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Dirección:</span>
+                        <span class="info-value" id="pedidoDireccion">-</span>
+                    </div>
+                    <div class="info-row" id="pedidoTelefonoRow" style="display: none;">
+                        <span class="info-label">Teléfono:</span>
+                        <span class="info-value" id="pedidoTelefono">-</span>
+                    </div>
+                </div>
+
+                <div class="photo-section">
+                    <h3>Evidencia de Entrega</h3>
+                    <div id="photoPreview" class="photo-preview" style="display: none;">
+                        <img id="photoImage" src="" alt="Foto de evidencia">
+                        <button class="btn btn-secondary btn-retake" id="btnRetakePhoto">
+                            🔄 Tomar otra foto
+                        </button>
+                    </div>
+                    <button class="btn btn-primary btn-large" id="btnTakePhoto">
+                        📸 Tomar Foto de Evidencia
+                    </button>
+                    <input type="file" id="inputPhoto" accept="image/*" capture="environment" style="display: none;">
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-success btn-large" id="btnMarkDelivered" style="display: none;">
+                        ✅ Marcar como Entregado
+                    </button>
+                    <button class="btn btn-danger" id="btnMarkNotDelivered">
+                        ❌ No se pudo entregar
+                    </button>
+                </div>
+
+                <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Procesando...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Screen 4: Confirmación -->
+    <div id="screenConfirmation" class="screen">
+        <div class="confirmation-container">
+            <div class="confirmation-icon">✅</div>
+            <h2 class="confirmation-title">¡Pedido Entregado!</h2>
+            <p class="confirmation-message" id="confirmationMessage">
+                El pedido ha sido marcado como entregado
+            </p>
+            <button class="btn btn-primary btn-large" id="btnScanAnother">
+                Escanear Otro Pedido
+            </button>
+        </div>
+    </div>
+
+    <!-- QR Scanner Library -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+    <!-- App Script -->
+    <script type="module" src="app.js"></script>
+</body>
+
+</html>

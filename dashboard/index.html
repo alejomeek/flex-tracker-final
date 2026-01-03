@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flex Tracker - Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <h1 class="header-title">📦 Flex Tracker - Dashboard</h1>
+            <button class="btn btn-primary" id="btnCreateOrder">➕ Crear Nuevo Pedido</button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Statistics Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total</div>
+                    <div class="stat-value" id="statTotal">0</div>
+                </div>
+                <div class="stat-card stat-pending">
+                    <div class="stat-label">Pendientes</div>
+                    <div class="stat-value" id="statPending">0</div>
+                </div>
+                <div class="stat-card stat-delivered">
+                    <div class="stat-label">Entregados</div>
+                    <div class="stat-value" id="statDelivered">0</div>
+                </div>
+                <div class="stat-card stat-not-delivered">
+                    <div class="stat-label">No Entregados</div>
+                    <div class="stat-value" id="statNotDelivered">0</div>
+                </div>
+            </div>
+
+            <!-- Filters and Search -->
+            <div class="filters-section">
+                <div class="search-box">
+                    <input 
+                        type="text" 
+                        id="searchInput" 
+                        placeholder="Buscar por número de envío, venta, destinatario, dirección o serial..."
+                        class="search-input"
+                    >
+                </div>
+                <div class="filter-buttons">
+                    <button class="filter-btn active" data-filter="todos">Todos</button>
+                    <button class="filter-btn" data-filter="pendiente">Pendientes</button>
+                    <button class="filter-btn" data-filter="entregado">Entregados</button>
+                    <button class="filter-btn" data-filter="no_entregado">No Entregados</button>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loadingState" class="loading-state">
+                <div class="spinner"></div>
+                <p>Cargando pedidos...</p>
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="empty-state" style="display: none;">
+                <div class="empty-icon">📦</div>
+                <h3>No hay pedidos</h3>
+                <p>Crea tu primer pedido para comenzar</p>
+            </div>
+
+            <!-- Orders Table -->
+            <div class="table-container" id="tableContainer" style="display: none;">
+                <table class="orders-table">
+                    <thead>
+                        <tr>
+                            <th>Serial</th>
+                            <th>N° Envío</th>
+                            <th>N° Venta</th>
+                            <th>Destinatario</th>
+                            <th>Dirección</th>
+                            <th>Estado</th>
+                            <th>Repartidor</th>
+                            <th>Fecha Entrega</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ordersTableBody">
+                        <!-- Rows will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal: Create Order -->
+    <div id="modalCreateOrder" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Crear Nuevo Pedido</h2>
+                <button class="modal-close" id="btnCloseCreateModal">&times;</button>
+            </div>
+            <form id="formCreateOrder">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="inputNumeroEnvio">N° Envío *</label>
+                        <input type="text" id="inputNumeroEnvio" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="inputNumeroVenta">N° Venta *</label>
+                        <input type="text" id="inputNumeroVenta" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="inputNumeroSerial">N° Serial *</label>
+                        <input type="number" id="inputNumeroSerial" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="inputDestinatario">Destinatario *</label>
+                        <input type="text" id="inputDestinatario" required>
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="inputDireccion">Dirección *</label>
+                        <input type="text" id="inputDireccion" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="inputDistrito">Distrito</label>
+                        <input type="text" id="inputDistrito">
+                    </div>
+                    <div class="form-group">
+                        <label for="inputTelefono">Teléfono</label>
+                        <input type="tel" id="inputTelefono">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="btnCancelCreate">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btnSubmitCreate">
+                        <span id="btnSubmitText">Crear Pedido</span>
+                        <span id="btnSubmitLoading" style="display: none;">Creando...</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: View Image -->
+    <div id="modalViewImage" class="modal">
+        <div class="modal-content modal-image">
+            <div class="modal-header">
+                <h2>Evidencia de Entrega</h2>
+                <button class="modal-close" id="btnCloseImageModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="image-info">
+                    <p><strong>Destinatario:</strong> <span id="imageDestinatario"></span></p>
+                    <p><strong>Repartidor:</strong> <span id="imageRepartidor"></span></p>
+                    <p><strong>Fecha:</strong> <span id="imageFecha"></span></p>
+                </div>
+                <div class="image-container">
+                    <img id="imagePreview" src="" alt="Evidencia de entrega">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
