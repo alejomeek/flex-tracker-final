@@ -35,11 +35,7 @@ const storage = getStorage(app);
 
 // Repartidores list (hardcoded)
 const REPARTIDORES = [
-    { id: 'rep001', nombre: 'Juan Pérez' },
-    { id: 'rep002', nombre: 'María González' },
-    { id: 'rep003', nombre: 'Carlos Rodríguez' },
-    { id: 'rep004', nombre: 'Ana Martínez' },
-    { id: 'rep005', nombre: 'Luis Ramírez' }
+    { id: 'rep001', nombre: 'SANCHEZ' }
 ];
 
 // Global state

@@ -1,14 +1,17 @@
 // Firebase imports
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-import { 
-    getFirestore, 
-    collection, 
-    addDoc, 
-    onSnapshot, 
-    query, 
+import {
+    getFirestore,
+    collection,
+    addDoc,
+    onSnapshot,
+    query,
     orderBy,
-    Timestamp 
+    Timestamp
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+// PDF Parser import
+import { extractDataFromPDF } from './pdf-parser.js';
 
 // Firebase configuration
 const firebaseConfig = {
@@ -44,6 +47,11 @@ const loadingState = document.getElementById('loadingState');
 const emptyState = document.getElementById('emptyState');
 const tableContainer = document.getElementById('tableContainer');
 
+// PDF Upload elements
+const btnUploadPDF = document.getElementById('btnUploadPDF');
+const inputPDFFile = document.getElementById('inputPDFFile');
+const pdfUploadStatus = document.getElementById('pdfUploadStatus');
+
 // Statistics elements
 const statTotal = document.getElementById('statTotal');
 const statPending = document.getElementById('statPending');
@@ -57,6 +65,10 @@ btnCancelCreate.addEventListener('click', closeCreateModal);
 btnCloseImageModal.addEventListener('click', closeImageModal);
 formCreateOrder.addEventListener('submit', handleCreateOrder);
 searchInput.addEventListener('input', handleSearch);
+
+// PDF Upload event listeners
+btnUploadPDF.addEventListener('click', () => inputPDFFile.click());
+inputPDFFile.addEventListener('change', handlePDFUpload);
 
 filterButtons.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -79,12 +91,12 @@ modalViewImage.addEventListener('click', (e) => {
 // Open create modal and auto-increment serial
 async function openCreateModal() {
     modalCreateOrder.classList.add('active');
-    
+
     // Auto-increment serial number
-    const maxSerial = allOrders.length > 0 
+    const maxSerial = allOrders.length > 0
         ? Math.max(...allOrders.map(order => order.numero_serial || 0))
         : 0;
-    
+
     document.getElementById('inputNumeroSerial').value = maxSerial + 1;
 }
 
@@ -99,24 +111,108 @@ function closeImageModal() {
     modalViewImage.classList.remove('active');
 }
 
+// Handle PDF upload and auto-fill form
+async function handlePDFUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Show loading status
+    pdfUploadStatus.style.display = 'block';
+    pdfUploadStatus.textContent = '📄 Extrayendo datos del PDF...';
+    pdfUploadStatus.className = 'pdf-upload-status loading';
+
+    try {
+        // Extract data from PDF
+        const data = await extractDataFromPDF(file);
+
+        // Auto-fill form fields
+        if (data.numero_venta) {
+            document.getElementById('inputNumeroVenta').value = data.numero_venta;
+            animateField('inputNumeroVenta');
+        }
+        if (data.numero_envio) {
+            document.getElementById('inputNumeroEnvio').value = data.numero_envio;
+            animateField('inputNumeroEnvio');
+        }
+        if (data.referencia) {
+            document.getElementById('inputReferencia').value = data.referencia;
+            animateField('inputReferencia');
+        }
+        if (data.distrito) {
+            document.getElementById('inputDistrito').value = data.distrito;
+            animateField('inputDistrito');
+        }
+        if (data.destinatario) {
+            document.getElementById('inputDestinatario').value = data.destinatario;
+            animateField('inputDestinatario');
+        }
+        if (data.direccion) {
+            document.getElementById('inputDireccion').value = data.direccion;
+            animateField('inputDireccion');
+        }
+
+        // Show success status
+        pdfUploadStatus.textContent = '✅ Datos cargados exitosamente';
+        pdfUploadStatus.className = 'pdf-upload-status success';
+
+        setTimeout(() => {
+            pdfUploadStatus.style.display = 'none';
+        }, 3000);
+
+    } catch (error) {
+        console.error('Error processing PDF:', error);
+        pdfUploadStatus.textContent = '❌ ' + error.message;
+        pdfUploadStatus.className = 'pdf-upload-status error';
+
+        setTimeout(() => {
+            pdfUploadStatus.style.display = 'none';
+        }, 5000);
+    }
+
+    // Reset file input
+    inputPDFFile.value = '';
+}
+
+// Animate field when auto-filled
+function animateField(fieldId) {
+    const field = document.getElementById(fieldId);
+    field.classList.add('auto-filled');
+    setTimeout(() => {
+        field.classList.remove('auto-filled');
+    }, 1000);
+}
+
 // Handle create order form submission
 async function handleCreateOrder(e) {
     e.preventDefault();
-    
+
     const btnSubmitText = document.getElementById('btnSubmitText');
     const btnSubmitLoading = document.getElementById('btnSubmitLoading');
     const btnSubmit = document.getElementById('btnSubmitCreate');
-    
+
     // Show loading state
     btnSubmitText.style.display = 'none';
     btnSubmitLoading.style.display = 'inline';
     btnSubmit.disabled = true;
-    
+
     try {
+        const numeroEnvio = document.getElementById('inputNumeroEnvio').value.trim();
+
+        // Check if order with same numero_envio already exists
+        const duplicateOrder = allOrders.find(order => order.numero_envio === numeroEnvio);
+        if (duplicateOrder) {
+            showNotification(`⚠️ Ya existe un pedido con el N° Envío ${numeroEnvio}`, 'error');
+            btnSubmitText.style.display = 'inline';
+            btnSubmitLoading.style.display = 'none';
+            btnSubmit.disabled = false;
+            return;
+        }
+
         const orderData = {
-            numero_envio: document.getElementById('inputNumeroEnvio').value.trim(),
+            numero_envio: numeroEnvio,
             numero_venta: document.getElementById('inputNumeroVenta').value.trim(),
             numero_serial: parseInt(document.getElementById('inputNumeroSerial').value),
+            referencia: document.getElementById('inputReferencia').value.trim() || null,
             destinatario: document.getElementById('inputDestinatario').value.trim(),
             direccion: document.getElementById('inputDireccion').value.trim(),
             distrito: document.getElementById('inputDistrito').value.trim() || null,
@@ -128,9 +224,9 @@ async function handleCreateOrder(e) {
             repartidor_nombre: null,
             imagen_evidencia_url: null
         };
-        
+
         await addDoc(collection(db, 'pedidos_flex'), orderData);
-        
+
         closeCreateModal();
         showNotification('Pedido creado exitosamente', 'success');
     } catch (error) {
@@ -152,19 +248,19 @@ function handleSearch(e) {
 // Listen to real-time updates from Firestore
 function listenToOrders() {
     const q = query(collection(db, 'pedidos_flex'), orderBy('numero_serial', 'desc'));
-    
+
     onSnapshot(q, (snapshot) => {
         allOrders = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
         }));
-        
+
         updateStatistics();
         renderOrders();
-        
+
         // Hide loading, show appropriate state
         loadingState.style.display = 'none';
-        
+
         if (allOrders.length === 0) {
             emptyState.style.display = 'block';
             tableContainer.style.display = 'none';
@@ -185,7 +281,7 @@ function updateStatistics() {
     const pending = allOrders.filter(o => o.estado === 'pendiente').length;
     const delivered = allOrders.filter(o => o.estado === 'entregado').length;
     const notDelivered = allOrders.filter(o => o.estado === 'no_entregado').length;
-    
+
     statTotal.textContent = total;
     statPending.textContent = pending;
     statDelivered.textContent = delivered;
@@ -195,12 +291,12 @@ function updateStatistics() {
 // Render orders table
 function renderOrders() {
     let filteredOrders = allOrders;
-    
+
     // Apply filter
     if (currentFilter !== 'todos') {
         filteredOrders = filteredOrders.filter(order => order.estado === currentFilter);
     }
-    
+
     // Apply search
     if (searchTerm) {
         filteredOrders = filteredOrders.filter(order => {
@@ -211,16 +307,16 @@ function renderOrders() {
                 order.direccion,
                 order.numero_serial?.toString()
             ].join(' ').toLowerCase();
-            
+
             return searchableText.includes(searchTerm);
         });
     }
-    
+
     // Render table rows
     if (filteredOrders.length === 0 && allOrders.length > 0) {
         ordersTableBody.innerHTML = `
             <tr>
-                <td colspan="9" style="text-align: center; padding: 2rem; color: #6b7280;">
+                <td colspan="11" style="text-align: center; padding: 2rem; color: #6b7280;">
                     No se encontraron pedidos con los filtros aplicados
                 </td>
             </tr>
@@ -231,16 +327,18 @@ function renderOrders() {
                 <td><strong>#${order.numero_serial}</strong></td>
                 <td>${order.numero_envio}</td>
                 <td>${order.numero_venta}</td>
+                <td>${order.referencia || '-'}</td>
                 <td>${order.destinatario}</td>
-                <td>${order.direccion}${order.distrito ? ` (${order.distrito})` : ''}</td>
+                <td>${order.direccion}</td>
+                <td>${order.distrito || '-'}</td>
                 <td>${getStatusBadge(order.estado)}</td>
                 <td>${order.repartidor_nombre || '-'}</td>
                 <td>${formatDate(order.fecha_entrega)}</td>
                 <td>
-                    ${order.imagen_evidencia_url 
-                        ? `<button class="btn-view-image" onclick="viewImage('${order.id}')">Ver Foto</button>` 
-                        : '-'
-                    }
+                    ${order.imagen_evidencia_url
+                ? `<button class="btn-view-image" onclick="viewImage('${order.id}')">Ver Foto</button>`
+                : '-'
+            }
                 </td>
             </tr>
         `).join('');
@@ -260,7 +358,7 @@ function getStatusBadge(estado) {
 // Format date
 function formatDate(timestamp) {
     if (!timestamp) return '-';
-    
+
     const date = timestamp.toDate();
     return date.toLocaleDateString('es-CO', {
         day: '2-digit',
@@ -272,15 +370,15 @@ function formatDate(timestamp) {
 }
 
 // View image (global function for onclick)
-window.viewImage = function(orderId) {
+window.viewImage = function (orderId) {
     const order = allOrders.find(o => o.id === orderId);
     if (!order) return;
-    
+
     document.getElementById('imageDestinatario').textContent = order.destinatario;
     document.getElementById('imageRepartidor').textContent = order.repartidor_nombre || '-';
     document.getElementById('imageFecha').textContent = formatDate(order.fecha_entrega);
     document.getElementById('imagePreview').src = order.imagen_evidencia_url;
-    
+
     modalViewImage.classList.add('active');
 };
 
@@ -300,9 +398,9 @@ function showNotification(message, type) {
         animation: slideIn 0.3s ease-out;
     `;
     notification.textContent = message;
-    
+
     document.body.appendChild(notification);
-    
+
     setTimeout(() => {
         notification.style.animation = 'slideOut 0.3s ease-out';
         setTimeout(() => notification.remove(), 300);

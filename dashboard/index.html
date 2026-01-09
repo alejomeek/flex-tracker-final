@@ -6,6 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flex Tracker - Dashboard</title>
     <link rel="stylesheet" href="styles.css">
+    <!-- PDF.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        // Configure PDF.js worker
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
 </head>
 
 <body>
@@ -76,8 +82,10 @@
                             <th>Serial</th>
                             <th>N° Envío</th>
                             <th>N° Venta</th>
+                            <th>Referencia</th>
                             <th>Destinatario</th>
                             <th>Dirección</th>
+                            <th>Distrito</th>
                             <th>Estado</th>
                             <th>Repartidor</th>
                             <th>Fecha Entrega</th>
@@ -99,6 +107,13 @@
                 <h2>Crear Nuevo Pedido</h2>
                 <button class="modal-close" id="btnCloseCreateModal">&times;</button>
             </div>
+            <div class="pdf-upload-section">
+                <button type="button" class="btn-upload-pdf" id="btnUploadPDF">
+                    📄 Cargar Etiqueta PDF
+                </button>
+                <input type="file" id="inputPDFFile" accept=".pdf" style="display: none;">
+                <div id="pdfUploadStatus" class="pdf-upload-status" style="display: none;"></div>
+            </div>
             <form id="formCreateOrder">
                 <div class="form-grid">
                     <div class="form-group">
@@ -112,6 +127,10 @@
                     <div class="form-group">
                         <label for="inputNumeroSerial">N° Serial *</label>
                         <input type="number" id="inputNumeroSerial" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="inputReferencia">Referencia</label>
+                        <input type="text" id="inputReferencia">
                     </div>
                     <div class="form-group">
                         <label for="inputDestinatario">Destinatario *</label>
