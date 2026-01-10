@@ -31,6 +31,7 @@ const db = getFirestore(app);
 let allOrders = [];
 let currentFilter = 'todos';
 let searchTerm = '';
+let selectedDate = getTodayDateString(); // Default: today
 
 // DOM elements
 const btnCreateOrder = document.getElementById('btnCreateOrder');
@@ -42,6 +43,8 @@ const modalViewImage = document.getElementById('modalViewImage');
 const formCreateOrder = document.getElementById('formCreateOrder');
 const searchInput = document.getElementById('searchInput');
 const filterButtons = document.querySelectorAll('.filter-btn');
+const dateFilter = document.getElementById('dateFilter');
+const btnClearDate = document.getElementById('btnClearDate');
 const ordersTableBody = document.getElementById('ordersTableBody');
 const loadingState = document.getElementById('loadingState');
 const emptyState = document.getElementById('emptyState');
@@ -78,6 +81,14 @@ filterButtons.forEach(btn => {
         renderOrders();
     });
 });
+
+// Date filter event listeners
+dateFilter.addEventListener('change', handleDateChange);
+btnClearDate.addEventListener('click', clearDateFilter);
+
+// Initialize date picker with today's date
+dateFilter.value = selectedDate;
+
 
 // Close modals when clicking outside
 modalCreateOrder.addEventListener('click', (e) => {
@@ -245,6 +256,42 @@ function handleSearch(e) {
     renderOrders();
 }
 
+// Get today's date as YYYY-MM-DD string
+function getTodayDateString() {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+// Check if a Firestore timestamp matches a date string
+function isSameDay(firestoreTimestamp, dateString) {
+    if (!firestoreTimestamp || !dateString) return false;
+
+    const date = firestoreTimestamp.toDate();
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}` === dateString;
+}
+
+// Handle date filter change
+function handleDateChange(e) {
+    selectedDate = e.target.value;
+    updateStatistics();
+    renderOrders();
+}
+
+// Clear date filter
+function clearDateFilter() {
+    selectedDate = null;
+    dateFilter.value = '';
+    updateStatistics();
+    renderOrders();
+}
+
 // Listen to real-time updates from Firestore
 function listenToOrders() {
     const q = query(collection(db, 'pedidos_flex'), orderBy('numero_serial', 'desc'));
@@ -277,10 +324,16 @@ function listenToOrders() {
 
 // Update statistics
 function updateStatistics() {
-    const total = allOrders.length;
-    const pending = allOrders.filter(o => o.estado === 'pendiente').length;
-    const delivered = allOrders.filter(o => o.estado === 'entregado').length;
-    const notDelivered = allOrders.filter(o => o.estado === 'no_entregado').length;
+    // Filter orders by date if selectedDate is set
+    let ordersToCount = allOrders;
+    if (selectedDate) {
+        ordersToCount = allOrders.filter(order => isSameDay(order.fecha_creacion, selectedDate));
+    }
+
+    const total = ordersToCount.length;
+    const pending = ordersToCount.filter(o => o.estado === 'pendiente').length;
+    const delivered = ordersToCount.filter(o => o.estado === 'entregado').length;
+    const notDelivered = ordersToCount.filter(o => o.estado === 'no_entregado').length;
 
     statTotal.textContent = total;
     statPending.textContent = pending;
@@ -291,6 +344,11 @@ function updateStatistics() {
 // Render orders table
 function renderOrders() {
     let filteredOrders = allOrders;
+
+    // Apply date filter first
+    if (selectedDate) {
+        filteredOrders = filteredOrders.filter(order => isSameDay(order.fecha_creacion, selectedDate));
+    }
 
     // Apply filter
     if (currentFilter !== 'todos') {
