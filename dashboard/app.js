@@ -7,7 +7,10 @@ import {
     onSnapshot,
     query,
     orderBy,
-    Timestamp
+    Timestamp,
+    doc,
+    runTransaction,
+    setDoc
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
 // PDF Parser import
@@ -99,16 +102,49 @@ modalViewImage.addEventListener('click', (e) => {
     if (e.target === modalViewImage) closeImageModal();
 });
 
+// Get next serial number from Firestore counter
+async function getNextSerialNumber() {
+    const counterRef = doc(db, 'contadores', 'pedidos_flex_counter');
+
+    try {
+        const newSerial = await runTransaction(db, async (transaction) => {
+            const counterDoc = await transaction.get(counterRef);
+
+            let currentValue = 0;
+            if (counterDoc.exists()) {
+                currentValue = counterDoc.data().current_value || 0;
+            }
+
+            const nextValue = currentValue + 1;
+
+            transaction.set(counterRef, { current_value: nextValue }, { merge: true });
+
+            return nextValue;
+        });
+
+        return newSerial;
+    } catch (error) {
+        console.error('Error getting next serial:', error);
+        throw error;
+    }
+}
+
 // Open create modal and auto-increment serial
 async function openCreateModal() {
     modalCreateOrder.classList.add('active');
 
-    // Auto-increment serial number
-    const maxSerial = allOrders.length > 0
-        ? Math.max(...allOrders.map(order => order.numero_serial || 0))
-        : 0;
-
-    document.getElementById('inputNumeroSerial').value = maxSerial + 1;
+    // Get next serial number from counter
+    try {
+        const nextSerial = await getNextSerialNumber();
+        document.getElementById('inputNumeroSerial').value = nextSerial;
+    } catch (error) {
+        showNotification('Error al obtener número serial', 'error');
+        // Fallback to old method if counter fails
+        const maxSerial = allOrders.length > 0
+            ? Math.max(...allOrders.map(order => order.numero_serial || 0))
+            : 0;
+        document.getElementById('inputNumeroSerial').value = maxSerial + 1;
+    }
 }
 
 // Close create modal

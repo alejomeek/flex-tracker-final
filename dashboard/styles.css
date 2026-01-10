@@ -480,6 +480,13 @@ body {
     border-color: #3b82f6;
 }
 
+.form-group input[readonly] {
+    background-color: #f3f4f6;
+    cursor: not-allowed;
+    color: #6b7280;
+}
+
+
 /* Image Modal */
 .image-info {
     background-color: #f9fafb;
