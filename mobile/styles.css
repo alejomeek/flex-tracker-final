@@ -443,6 +443,43 @@ body {
     width: 100%;
 }
 
+/* Receiver Section */
+.receiver-section {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background-color: #f9fafb;
+    border-radius: 0.5rem;
+    border: 2px solid #e5e7eb;
+}
+
+.receiver-section label {
+    display: block;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.receiver-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    background-color: white;
+    transition: border-color 0.2s;
+}
+
+.receiver-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+}
+
+.receiver-input::placeholder {
+    color: #9ca3af;
+}
+
+
 /* Action Buttons */
 .action-buttons {
     display: flex;

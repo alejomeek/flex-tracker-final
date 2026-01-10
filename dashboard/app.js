@@ -316,7 +316,7 @@ function renderOrders() {
     if (filteredOrders.length === 0 && allOrders.length > 0) {
         ordersTableBody.innerHTML = `
             <tr>
-                <td colspan="11" style="text-align: center; padding: 2rem; color: #6b7280;">
+                <td colspan="12" style="text-align: center; padding: 2rem; color: #6b7280;">
                     No se encontraron pedidos con los filtros aplicados
                 </td>
             </tr>
@@ -334,6 +334,7 @@ function renderOrders() {
                 <td>${getStatusBadge(order.estado)}</td>
                 <td>${order.repartidor_nombre || '-'}</td>
                 <td>${formatDate(order.fecha_entrega)}</td>
+                <td>${order.recibido_por || '-'}</td>
                 <td>
                     ${order.imagen_evidencia_url
                 ? `<button class="btn-view-image" onclick="viewImage('${order.id}')">Ver Foto</button>`

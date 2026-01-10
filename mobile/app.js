@@ -69,6 +69,8 @@ const btnRetakePhoto = document.getElementById('btnRetakePhoto');
 const inputPhoto = document.getElementById('inputPhoto');
 const photoPreview = document.getElementById('photoPreview');
 const photoImage = document.getElementById('photoImage');
+const receiverSection = document.getElementById('receiverSection');
+const inputReceiverName = document.getElementById('inputReceiverName');
 const btnMarkDelivered = document.getElementById('btnMarkDelivered');
 const btnMarkNotDelivered = document.getElementById('btnMarkNotDelivered');
 const loadingOverlay = document.getElementById('loadingOverlay');
@@ -384,9 +386,23 @@ function handlePhotoCapture(e) {
         photoImage.src = e.target.result;
         photoPreview.style.display = 'block';
         btnTakePhoto.style.display = 'none';
-        btnMarkDelivered.style.display = 'block';
+        receiverSection.style.display = 'block';
+
+        // Enable button only when receiver name is filled
+        inputReceiverName.addEventListener('input', checkReceiverName);
+        checkReceiverName();
     };
     reader.readAsDataURL(file);
+}
+
+// Check if receiver name is filled to enable button
+function checkReceiverName() {
+    const receiverName = inputReceiverName.value.trim();
+    if (receiverName) {
+        btnMarkDelivered.style.display = 'block';
+    } else {
+        btnMarkDelivered.style.display = 'none';
+    }
 }
 
 // Reset pedido screen
@@ -396,13 +412,21 @@ function resetPedidoScreen() {
     photoPreview.style.display = 'none';
     btnTakePhoto.style.display = 'block';
     btnMarkDelivered.style.display = 'none';
+    receiverSection.style.display = 'none';
     inputPhoto.value = '';
+    inputReceiverName.value = '';
 }
 
 // Handle mark as delivered
 async function handleMarkDelivered() {
     if (!capturedPhoto) {
         showNotification('Debes tomar una foto primero', 'error');
+        return;
+    }
+
+    const receiverName = inputReceiverName.value.trim();
+    if (!receiverName) {
+        showNotification('Debes escribir quién recibió el pedido', 'error');
         return;
     }
 
@@ -425,7 +449,8 @@ async function handleMarkDelivered() {
             fecha_entrega: Timestamp.now(),
             repartidor_id: currentRepartidor.id,
             repartidor_nombre: currentRepartidor.nombre,
-            imagen_evidencia_url: imageUrl
+            imagen_evidencia_url: imageUrl,
+            recibido_por: receiverName
         });
 
         // Show confirmation
