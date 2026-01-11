@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Buscar y Borrar Pedidos</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+            font-size: 1.75rem;
+        }
+
+        .subtitle {
+            color: #6b7280;
+        }
+
+        .search-section {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .search-box {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 0.75rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+
+        .results-section {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .results-count {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+
+        .pedidos-grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .pedido-card {
+            border: 2px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            transition: all 0.2s;
+        }
+
+        .pedido-card:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+        }
+
+        .pedido-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .pedido-serial {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #3b82f6;
+        }
+
+        .pedido-status {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+        }
+
+        .status-pendiente {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-entregado {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-no-entregado {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .pedido-info {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .info-item {
+            font-size: 0.875rem;
+        }
+
+        .info-label {
+            color: #6b7280;
+            font-weight: 600;
+        }
+
+        .info-value {
+            color: #1f2937;
+        }
+
+        .pedido-actions {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: flex-end;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #6b7280;
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #6b7280;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e5e7eb;
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .warning {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            border-radius: 0.5rem;
+        }
+
+        .warning p {
+            color: #92400e;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🗑️ Buscar y Borrar Pedidos</h1>
+            <p class="subtitle">Herramienta administrativa - Solo para uso interno</p>
+        </div>
+
+        <div class="search-section">
+            <div class="warning">
+                <p>⚠️ Esta herramienta permite borrar pedidos individuales. Usa con precaución.</p>
+            </div>
+
+            <div class="search-box">
+                <input type="text" id="searchInput" class="search-input"
+                    placeholder="Buscar por N° Envío, N° Venta, Serial, Destinatario, Dirección...">
+                <button class="btn btn-primary" id="btnSearch">🔍 Buscar</button>
+                <button class="btn btn-secondary" id="btnShowAll">Ver Todos</button>
+            </div>
+        </div>
+
+        <div class="results-section">
+            <div class="results-header">
+                <h2>Resultados</h2>
+                <span class="results-count" id="resultsCount">-</span>
+            </div>
+
+            <div id="loadingState" class="loading" style="display: none;">
+                <div class="spinner"></div>
+                <p>Cargando pedidos...</p>
+            </div>
+
+            <div id="emptyState" class="empty-state">
+                <div class="empty-state-icon">📦</div>
+                <p>Usa el buscador para encontrar pedidos</p>
+            </div>
+
+            <div id="pedidosGrid" class="pedidos-grid" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import {
+            getFirestore,
+            collection,
+            getDocs,
+            deleteDoc,
+            doc,
+            query,
+            orderBy
+        } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD9sKuqivGZryt7Ol33WtUpsM5Q0eARNR4",
+            authDomain: "flex-tracker-ce54b.firebaseapp.com",
+            projectId: "flex-tracker-ce54b",
+            storageBucket: "flex-tracker-ce54b.firebasestorage.app",
+            messagingSenderId: "617822125610",
+            appId: "1:617822125610:web:ce2265cef161b7c7e10d53"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let allPedidos = [];
+        let filteredPedidos = [];
+
+        const searchInput = document.getElementById('searchInput');
+        const btnSearch = document.getElementById('btnSearch');
+        const btnShowAll = document.getElementById('btnShowAll');
+        const loadingState = document.getElementById('loadingState');
+        const emptyState = document.getElementById('emptyState');
+        const pedidosGrid = document.getElementById('pedidosGrid');
+        const resultsCount = document.getElementById('resultsCount');
+
+        // Event listeners
+        btnSearch.addEventListener('click', handleSearch);
+        btnShowAll.addEventListener('click', showAllPedidos);
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleSearch();
+        });
+
+        // Load all pedidos
+        async function loadPedidos() {
+            loadingState.style.display = 'block';
+            emptyState.style.display = 'none';
+            pedidosGrid.style.display = 'none';
+
+            try {
+                const q = query(collection(db, 'pedidos_flex'), orderBy('numero_serial', 'desc'));
+                const querySnapshot = await getDocs(q);
+
+                allPedidos = querySnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+
+                loadingState.style.display = 'none';
+                emptyState.style.display = 'block';
+                resultsCount.textContent = `${allPedidos.length} pedidos en total`;
+            } catch (error) {
+                console.error('Error loading pedidos:', error);
+                alert('Error al cargar pedidos: ' + error.message);
+                loadingState.style.display = 'none';
+            }
+        }
+
+        // Handle search
+        function handleSearch() {
+            const searchTerm = searchInput.value.toLowerCase().trim();
+
+            if (!searchTerm) {
+                alert('Por favor escribe algo para buscar');
+                return;
+            }
+
+            filteredPedidos = allPedidos.filter(pedido => {
+                const searchableText = [
+                    pedido.numero_envio,
+                    pedido.numero_venta,
+                    pedido.numero_serial?.toString(),
+                    pedido.destinatario,
+                    pedido.direccion,
+                    pedido.distrito,
+                    pedido.referencia
+                ].join(' ').toLowerCase();
+
+                return searchableText.includes(searchTerm);
+            });
+
+            renderPedidos(filteredPedidos);
+        }
+
+        // Show all pedidos
+        function showAllPedidos() {
+            searchInput.value = '';
+            renderPedidos(allPedidos);
+        }
+
+        // Render pedidos
+        function renderPedidos(pedidos) {
+            if (pedidos.length === 0) {
+                emptyState.style.display = 'block';
+                pedidosGrid.style.display = 'none';
+                resultsCount.textContent = '0 resultados';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            pedidosGrid.style.display = 'grid';
+            resultsCount.textContent = `${pedidos.length} resultado(s)`;
+
+            pedidosGrid.innerHTML = pedidos.map(pedido => `
+                <div class="pedido-card">
+                    <div class="pedido-header">
+                        <span class="pedido-serial">#${pedido.numero_serial}</span>
+                        <span class="pedido-status status-${pedido.estado}">
+                            ${getStatusText(pedido.estado)}
+                        </span>
+                    </div>
+                    <div class="pedido-info">
+                        <div class="info-item">
+                            <span class="info-label">N° Envío:</span>
+                            <span class="info-value">${pedido.numero_envio}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">N° Venta:</span>
+                            <span class="info-value">${pedido.numero_venta}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Destinatario:</span>
+                            <span class="info-value">${pedido.destinatario}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Distrito:</span>
+                            <span class="info-value">${pedido.distrito || '-'}</span>
+                        </div>
+                        <div class="info-item" style="grid-column: 1 / -1;">
+                            <span class="info-label">Dirección:</span>
+                            <span class="info-value">${pedido.direccion}</span>
+                        </div>
+                        ${pedido.repartidor_nombre ? `
+                        <div class="info-item">
+                            <span class="info-label">Repartidor:</span>
+                            <span class="info-value">${pedido.repartidor_nombre}</span>
+                        </div>
+                        ` : ''}
+                        ${pedido.recibido_por ? `
+                        <div class="info-item">
+                            <span class="info-label">Recibido por:</span>
+                            <span class="info-value">${pedido.recibido_por}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                    <div class="pedido-actions">
+                        <button class="btn btn-danger" onclick="deletePedido('${pedido.id}', '${pedido.numero_serial}')">
+                            🗑️ Borrar
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Get status text
+        function getStatusText(estado) {
+            const statusMap = {
+                'pendiente': 'Pendiente',
+                'entregado': 'Entregado',
+                'no_entregado': 'No Entregado'
+            };
+            return statusMap[estado] || estado;
+        }
+
+        // Delete pedido
+        window.deletePedido = async function (pedidoId, serial) {
+            const confirmed = confirm(
+                `¿Estás SEGURO de que quieres borrar el pedido #${serial}?\n\n` +
+                'Esta acción NO se puede deshacer.'
+            );
+
+            if (!confirmed) return;
+
+            try {
+                await deleteDoc(doc(db, 'pedidos_flex', pedidoId));
+
+                // Remove from arrays
+                allPedidos = allPedidos.filter(p => p.id !== pedidoId);
+                filteredPedidos = filteredPedidos.filter(p => p.id !== pedidoId);
+
+                // Re-render
+                if (searchInput.value.trim()) {
+                    renderPedidos(filteredPedidos);
+                } else {
+                    renderPedidos(allPedidos);
+                }
+
+                alert(`Pedido #${serial} borrado exitosamente`);
+            } catch (error) {
+                console.error('Error deleting pedido:', error);
+                alert('Error al borrar pedido: ' + error.message);
+            }
+        };
+
+        // Initialize
+        loadPedidos();
+    </script>
+</body>
+
+</html>
