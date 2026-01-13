@@ -10,6 +10,13 @@
     <title>Flex Tracker - Repartidor</title>
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="styles.css?v=2.0">
+
+    <!-- Force cache refresh by redirecting to versioned URL -->
+    <script>
+        if (!window.location.search.includes('v=')) {
+            window.location.href = window.location.pathname + '?v=2';
+        }
+    </script>
 </head>
 
 <body>
