@@ -249,6 +249,151 @@ async function confirmarImportacion() {
     }
 }
 
+// Generate Wix Label PDF with QR Code
+async function generarEtiquetaWixPDF(pedido) {
+    try {
+        const { jsPDF } = window.jspdf;
+
+        // Create PDF (10x15 cm)
+        const doc = new jsPDF({
+            orientation: 'portrait',
+            unit: 'cm',
+            format: [10, 15]
+        });
+
+        // Company info
+        const empresaInfo = {
+            nombre: "DIDÁCTICOS JUGANDO Y EDUCANDO SAS",
+            nit: "NIT 901,144,615-6",
+            direccion: "CC Bulevar - Local S113, Bogotá",
+            celular: "Celular 3134285423"
+        };
+
+        // Set font
+        doc.setFont("helvetica");
+
+        let y = 1; // Start position
+
+        // Company name (bold, larger)
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.text(empresaInfo.nombre, 0.5, y);
+        y += 0.5;
+
+        // Company details
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "normal");
+        doc.text(empresaInfo.nit, 0.5, y);
+        y += 0.4;
+        doc.text(empresaInfo.direccion, 0.5, y);
+        y += 0.4;
+        doc.text(empresaInfo.celular, 0.5, y);
+        y += 0.6;
+
+        // Separator line
+        doc.setLineWidth(0.02);
+        doc.line(0.5, y, 9.5, y);
+        y += 0.6;
+
+        // Recipient info (bold, larger)
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text(`Destinatario: ${pedido.destinatario}`, 0.5, y);
+        y += 0.6;
+
+        // Phone
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Celular: ${pedido.celular || 'N/A'}`, 0.5, y);
+        y += 0.5;
+
+        // Address
+        const direccionLines = pedido.direccion.split('\n').filter(line => line.trim());
+        doc.text(`Dirección: ${direccionLines[0]}`, 0.5, y);
+        y += 0.5;
+        if (direccionLines[1]) {
+            doc.text(`           ${direccionLines[1]}`, 0.5, y);
+            y += 0.5;
+        }
+
+        // City
+        doc.setFont("helvetica", "bold");
+        doc.text(`Ciudad: ${pedido.ciudad || 'N/A'}`, 0.5, y);
+        y += 0.5;
+
+        // Order number
+        doc.text(`Pedido: #${pedido.numero_pedido_wix}`, 0.5, y);
+        y += 0.6;
+
+        // Observations if any
+        if (pedido.observaciones_wix && pedido.observaciones_wix.trim()) {
+            doc.setFontSize(9);
+            doc.setFont("helvetica", "normal");
+            doc.text(`Observaciones:`, 0.5, y);
+            y += 0.4;
+            doc.text(pedido.observaciones_wix, 0.5, y);
+        }
+
+        // Generate QR Code
+        const qrContainer = document.createElement('div');
+        qrContainer.style.display = 'none';
+        document.body.appendChild(qrContainer);
+
+        const qr = new QRCode(qrContainer, {
+            text: pedido.numero_serial.toString(),
+            width: 200,
+            height: 200,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+
+        // Wait for QR to generate
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // Get QR image
+        const qrImage = qrContainer.querySelector('img');
+        if (qrImage) {
+            // Add QR code to PDF (bottom right)
+            const qrSize = 3; // 3cm
+            const qrX = 9.5 - qrSize - 0.5; // Right aligned with margin
+            const qrY = 15 - qrSize - 1; // Bottom with margin
+
+            doc.addImage(qrImage.src, 'PNG', qrX, qrY, qrSize, qrSize);
+
+            // Add serial number below QR
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "bold");
+            const serialText = `#${pedido.numero_serial}`;
+            const textWidth = doc.getTextWidth(serialText);
+            doc.text(serialText, qrX + (qrSize - textWidth) / 2, qrY + qrSize + 0.4);
+        }
+
+        // Clean up
+        document.body.removeChild(qrContainer);
+
+        // Download PDF
+        doc.save(`WIX_${pedido.numero_pedido_wix}_${pedido.numero_serial}.pdf`);
+
+        showNotification('✅ Etiqueta PDF generada', 'success');
+
+    } catch (error) {
+        console.error('Error generando etiqueta PDF:', error);
+        showNotification('Error al generar etiqueta PDF', 'error');
+    }
+}
+
+// Wrapper function to generate label from order ID
+window.generarEtiquetaWix = async function (orderId) {
+    const order = allOrders.find(o => o.id === orderId);
+    if (order && order.origen === 'wix') {
+        await generarEtiquetaWixPDF(order);
+    } else {
+        showNotification('Pedido no encontrado o no es de Wix', 'error');
+    }
+};
+
+
 // Get next serial number from Firestore counter
 async function getNextSerialNumber() {
     const counterRef = doc(db, 'contadores', 'pedidos_flex_counter');
@@ -683,6 +828,10 @@ function renderOrders() {
                     ${order.imagen_evidencia_url
                 ? `<button class="btn-view-image" onclick="viewImage('${order.id}')">Ver Foto</button>`
                 : '-'
+            }
+                    ${(order.origen === 'wix' && order.estado === 'pendiente')
+                ? `<button class="btn-generate-label" onclick="generarEtiquetaWix('${order.id}')">🏷️ Generar Etiqueta</button>`
+                : ''
             }
                 </td>
             </tr>
