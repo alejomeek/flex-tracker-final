@@ -1004,17 +1004,18 @@ function renderOrders() {
                                     <input type="checkbox" 
                                            class="cod-checkbox" 
                                            data-order-id="${order.id}"
-                                           ${order.pago_contraentrega ? 'checked' : ''}
+                                           ${order.pago_contraentrega ? 'checked disabled' : ''}
                                            onchange="toggleCOD('${order.id}', this.checked)">
                                 </label>
                                 <input type="number" 
                                        class="cod-amount-input ${order.pago_contraentrega ? '' : 'hidden'}" 
                                        id="cod-amount-${order.id}"
-                                       value="${order.monto_cobrar || 0}"
+                                       value="${order.monto_cobrar > 0 ? order.monto_cobrar : ''}"
                                        placeholder="Monto"
                                        min="0"
-                                       step="1000">
-                                <button class="btn-save-cod ${order.pago_contraentrega ? '' : 'hidden'}" 
+                                       step="1000"
+                                       ${order.pago_contraentrega && order.monto_cobrar > 0 ? 'disabled' : ''}>
+                                <button class="btn-save-cod ${order.pago_contraentrega && order.monto_cobrar > 0 ? 'hidden' : (order.pago_contraentrega ? '' : 'hidden')}" 
                                         id="btn-save-${order.id}"
                                         onclick="saveCOD('${order.id}')">
                                     💾

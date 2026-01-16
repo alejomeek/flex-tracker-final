@@ -823,3 +823,15 @@ body {
 .btn-save-cod.hidden {
     display: none;
 }
+
+/* Disabled COD controls */
+.cod-checkbox:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.cod-amount-input:disabled {
+    background-color: #f3f4f6;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
