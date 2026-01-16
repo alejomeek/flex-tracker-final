@@ -335,7 +335,7 @@ async function generarEtiquetaWixPDF(pedido) {
         document.body.appendChild(qrContainer);
 
         const qr = new QRCode(qrContainer, {
-            text: pedido.numero_serial.toString(),
+            text: pedido.numero_pedido_wix.toString(),
             width: 200,
             height: 200,
             colorDark: "#000000",
@@ -356,12 +356,12 @@ async function generarEtiquetaWixPDF(pedido) {
 
             doc.addImage(qrImage.src, 'PNG', qrX, qrY, qrSize, qrSize);
 
-            // Add serial number below QR
+            // Add pedido number below QR
             doc.setFontSize(10);
             doc.setFont("helvetica", "bold");
-            const serialText = `#${pedido.numero_serial}`;
-            const textWidth = doc.getTextWidth(serialText);
-            doc.text(serialText, qrX + (qrSize - textWidth) / 2, qrY + qrSize + 0.4);
+            const pedidoText = `#${pedido.numero_pedido_wix}`;
+            const textWidth = doc.getTextWidth(pedidoText);
+            doc.text(pedidoText, qrX + (qrSize - textWidth) / 2, qrY + qrSize + 0.4);
         }
 
         // Clean up

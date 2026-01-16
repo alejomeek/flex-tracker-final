@@ -290,7 +290,7 @@ function extractShipmentNumber(qrText) {
     return qrText.trim();
 }
 
-// Search pedido
+// Search pedido in both collections
 async function searchPedido(scannedText) {
     try {
         // Extract the shipment number from the scanned text
@@ -298,40 +298,80 @@ async function searchPedido(scannedText) {
 
         console.log('Buscando pedido con número:', numeroEnvio);
 
-        const q = query(
+        // First, try to search in pedidos_flex by numero_envio
+        const qFlex = query(
             collection(db, 'pedidos_flex'),
             where('numero_envio', '==', numeroEnvio)
         );
 
-        const querySnapshot = await getDocs(q);
+        const flexSnapshot = await getDocs(qFlex);
 
-        if (querySnapshot.empty) {
-            showNotification(`Pedido no encontrado: ${numeroEnvio}`, 'error');
-            console.log('No se encontró pedido con número:', numeroEnvio);
+        if (!flexSnapshot.empty) {
+            // Found in pedidos_flex
+            const pedidoDoc = flexSnapshot.docs[0];
+            currentPedido = {
+                id: pedidoDoc.id,
+                coleccion: 'pedidos_flex',
+                ...pedidoDoc.data()
+            };
+
+            console.log('Pedido Flex encontrado:', currentPedido);
+
+            // Check if already delivered
+            if (currentPedido.estado === 'entregado') {
+                showNotification('Este pedido ya fue entregado', 'warning');
+                return;
+            }
+
+            if (currentPedido.estado === 'no_entregado') {
+                showNotification('Este pedido fue marcado como no entregado', 'warning');
+                return;
+            }
+
+            showPedidoDetails();
+            showScreen('pedido');
             return;
         }
 
-        const pedidoDoc = querySnapshot.docs[0];
-        currentPedido = {
-            id: pedidoDoc.id,
-            ...pedidoDoc.data()
-        };
+        // If not found in Flex, try pedidos_wix by numero_pedido_wix
+        const qWix = query(
+            collection(db, 'pedidos_wix'),
+            where('numero_pedido_wix', '==', numeroEnvio)
+        );
 
-        console.log('Pedido encontrado:', currentPedido);
+        const wixSnapshot = await getDocs(qWix);
 
-        // Check if already delivered
-        if (currentPedido.estado === 'entregado') {
-            showNotification('Este pedido ya fue entregado', 'warning');
+        if (!wixSnapshot.empty) {
+            // Found in pedidos_wix
+            const pedidoDoc = wixSnapshot.docs[0];
+            currentPedido = {
+                id: pedidoDoc.id,
+                coleccion: 'pedidos_wix',
+                ...pedidoDoc.data()
+            };
+
+            console.log('Pedido Wix encontrado:', currentPedido);
+
+            // Check if already delivered
+            if (currentPedido.estado === 'entregado') {
+                showNotification('Este pedido ya fue entregado', 'warning');
+                return;
+            }
+
+            if (currentPedido.estado === 'no_entregado') {
+                showNotification('Este pedido fue marcado como no entregado', 'warning');
+                return;
+            }
+
+            showPedidoDetails();
+            showScreen('pedido');
             return;
         }
 
-        if (currentPedido.estado === 'no_entregado') {
-            showNotification('Este pedido fue marcado como no entregado', 'warning');
-            return;
-        }
+        // Not found in either collection
+        showNotification(`Pedido no encontrado: ${numeroEnvio}`, 'error');
+        console.log('No se encontró pedido con número:', numeroEnvio);
 
-        showPedidoDetails();
-        showScreen('pedido');
     } catch (error) {
         console.error('Error searching pedido:', error);
         showNotification('Error al buscar el pedido', 'error');
@@ -442,8 +482,8 @@ async function handleMarkDelivered() {
         await uploadBytes(storageRef, compressedImage);
         const imageUrl = await getDownloadURL(storageRef);
 
-        // Update pedido in Firestore
-        const pedidoRef = doc(db, 'pedidos_flex', currentPedido.id);
+        // Update pedido in Firestore (correct collection)
+        const pedidoRef = doc(db, currentPedido.coleccion, currentPedido.id);
         await updateDoc(pedidoRef, {
             estado: 'entregado',
             fecha_entrega: Timestamp.now(),
@@ -476,7 +516,7 @@ async function handleMarkNotDelivered() {
     loadingOverlay.style.display = 'flex';
 
     try {
-        const pedidoRef = doc(db, 'pedidos_flex', currentPedido.id);
+        const pedidoRef = doc(db, currentPedido.coleccion, currentPedido.id);
         await updateDoc(pedidoRef, {
             estado: 'no_entregado',
             fecha_entrega: Timestamp.now(),
