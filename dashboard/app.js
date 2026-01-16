@@ -267,7 +267,21 @@ async function generarEtiquetaWixPDF(pedido) {
         // Set font
         doc.setFont("helvetica");
 
-        let y = 1; // Start position
+        let y = 0.5; // Start position
+
+        // Add logo at the top (centered)
+        const logoPath = 'logo transparente.png';
+        const logoWidth = 3; // 3cm width
+        const logoHeight = 0.8; // Will maintain aspect ratio approximately
+        const logoX = (10 - logoWidth) / 2; // Center horizontally
+
+        try {
+            doc.addImage(logoPath, 'PNG', logoX, y, logoWidth, logoHeight);
+            y += logoHeight + 0.3; // Space after logo
+        } catch (error) {
+            console.warn('Could not load logo:', error);
+            // Continue without logo if it fails
+        }
 
         // Company name (bold, larger)
         doc.setFontSize(10);
@@ -302,14 +316,17 @@ async function generarEtiquetaWixPDF(pedido) {
         doc.text(`Celular: ${pedido.celular || 'N/A'}`, 0.5, y);
         y += 0.5;
 
-        // Address
-        const direccionLines = pedido.direccion.split('\n').filter(line => line.trim());
-        doc.text(`Dirección: ${direccionLines[0]}`, 0.5, y);
-        y += 0.5;
-        if (direccionLines[1]) {
-            doc.text(`           ${direccionLines[1]}`, 0.5, y);
-            y += 0.5;
-        }
+        // Address (allow multiple lines with word wrap)
+        doc.setFontSize(10);
+        const direccionText = pedido.direccion || 'N/A';
+        const maxWidth = 8.5; // Max width for text (10cm - 1.5cm margins)
+        const direccionLines = doc.splitTextToSize(`Dirección: ${direccionText}`, maxWidth);
+
+        // Print all lines of address
+        direccionLines.forEach((line, index) => {
+            doc.text(line, 0.5, y);
+            y += 0.45; // Slightly smaller line height for addresses
+        });
 
         // City
         doc.setFont("helvetica", "bold");
