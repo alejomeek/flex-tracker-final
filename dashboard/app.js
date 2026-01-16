@@ -32,7 +32,7 @@ const db = getFirestore(app);
 
 // Global state
 let allOrders = [];
-let currentFilter = 'todos';
+let currentFilter = 'flex'; // Default: show only Flex orders
 let searchTerm = '';
 let selectedDate = getTodayDateString(); // Default: today
 
