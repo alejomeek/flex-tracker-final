@@ -334,24 +334,39 @@
             if (e.key === 'Enter') handleSearch();
         });
 
-        // Load all pedidos
+        // Load all pedidos from BOTH collections
         async function loadPedidos() {
             loadingState.style.display = 'block';
             emptyState.style.display = 'none';
             pedidosGrid.style.display = 'none';
 
             try {
-                const q = query(collection(db, 'pedidos_flex'), orderBy('numero_serial', 'desc'));
-                const querySnapshot = await getDocs(q);
-
-                allPedidos = querySnapshot.docs.map(doc => ({
+                // Load from pedidos_flex
+                const qFlex = query(collection(db, 'pedidos_flex'), orderBy('numero_serial', 'desc'));
+                const flexSnapshot = await getDocs(qFlex);
+                const flexPedidos = flexSnapshot.docs.map(doc => ({
                     id: doc.id,
+                    coleccion: 'pedidos_flex',
+                    origen: 'flex',
                     ...doc.data()
                 }));
 
+                // Load from pedidos_wix
+                const qWix = query(collection(db, 'pedidos_wix'), orderBy('numero_serial', 'desc'));
+                const wixSnapshot = await getDocs(qWix);
+                const wixPedidos = wixSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    coleccion: 'pedidos_wix',
+                    origen: 'wix',
+                    ...doc.data()
+                }));
+
+                // Combine and sort
+                allPedidos = [...flexPedidos, ...wixPedidos].sort((a, b) => b.numero_serial - a.numero_serial);
+
                 loadingState.style.display = 'none';
                 emptyState.style.display = 'block';
-                resultsCount.textContent = `${allPedidos.length} pedidos en total`;
+                resultsCount.textContent = `${allPedidos.length} pedidos en total (${flexPedidos.length} Flex + ${wixPedidos.length} Wix)`;
             } catch (error) {
                 console.error('Error loading pedidos:', error);
                 alert('Error al cargar pedidos: ' + error.message);
@@ -407,28 +422,42 @@
             pedidosGrid.innerHTML = pedidos.map(pedido => `
                 <div class="pedido-card">
                     <div class="pedido-header">
-                        <span class="pedido-serial">#${pedido.numero_serial}</span>
+                        <span class="pedido-serial">#${pedido.numero_serial} ${pedido.origen === 'wix' ? '🛒' : '📦'}</span>
                         <span class="pedido-status status-${pedido.estado}">
                             ${getStatusText(pedido.estado)}
                         </span>
                     </div>
                     <div class="pedido-info">
                         <div class="info-item">
+                            <span class="info-label">Origen:</span>
+                            <span class="info-value">${pedido.origen === 'wix' ? 'Wix' : 'Flex'}</span>
+                        </div>
+                        <div class="info-item">
                             <span class="info-label">N° Envío:</span>
                             <span class="info-value">${pedido.numero_envio}</span>
                         </div>
+                        ${pedido.numero_venta ? `
                         <div class="info-item">
                             <span class="info-label">N° Venta:</span>
                             <span class="info-value">${pedido.numero_venta}</span>
                         </div>
+                        ` : ''}
                         <div class="info-item">
                             <span class="info-label">Destinatario:</span>
                             <span class="info-value">${pedido.destinatario}</span>
                         </div>
+                        ${pedido.celular ? `
+                        <div class="info-item">
+                            <span class="info-label">Celular:</span>
+                            <span class="info-value">${pedido.celular}</span>
+                        </div>
+                        ` : ''}
+                        ${pedido.distrito ? `
                         <div class="info-item">
                             <span class="info-label">Distrito:</span>
-                            <span class="info-value">${pedido.distrito || '-'}</span>
+                            <span class="info-value">${pedido.distrito}</span>
                         </div>
+                        ` : ''}
                         <div class="info-item" style="grid-column: 1 / -1;">
                             <span class="info-label">Dirección:</span>
                             <span class="info-value">${pedido.direccion}</span>
@@ -447,7 +476,7 @@
                         ` : ''}
                     </div>
                     <div class="pedido-actions">
-                        <button class="btn btn-danger" onclick="deletePedido('${pedido.id}', '${pedido.numero_serial}')">
+                        <button class="btn btn-danger" onclick="deletePedido('${pedido.id}', '${pedido.numero_serial}', '${pedido.coleccion}')">
                             🗑️ Borrar
                         </button>
                     </div>
@@ -465,8 +494,8 @@
             return statusMap[estado] || estado;
         }
 
-        // Delete pedido
-        window.deletePedido = async function (pedidoId, serial) {
+        // Delete pedido from correct collection
+        window.deletePedido = async function (pedidoId, serial, coleccion) {
             const confirmed = confirm(
                 `¿Estás SEGURO de que quieres borrar el pedido #${serial}?\n\n` +
                 'Esta acción NO se puede deshacer.'
@@ -475,7 +504,8 @@
             if (!confirmed) return;
 
             try {
-                await deleteDoc(doc(db, 'pedidos_flex', pedidoId));
+                // Delete from correct collection
+                await deleteDoc(doc(db, coleccion, pedidoId));
 
                 // Remove from arrays
                 allPedidos = allPedidos.filter(p => p.id !== pedidoId);
@@ -488,7 +518,7 @@
                     renderPedidos(allPedidos);
                 }
 
-                alert(`Pedido #${serial} borrado exitosamente`);
+                alert(`Pedido #${serial} borrado exitosamente de ${coleccion}`);
             } catch (error) {
                 console.error('Error deleting pedido:', error);
                 alert('Error al borrar pedido: ' + error.message);
