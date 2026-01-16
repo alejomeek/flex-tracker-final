@@ -331,7 +331,7 @@ async function generarEtiquetaWixPDF(pedido) {
         if (pedido.pago_contraentrega) {
             // Yellow background
             doc.setFillColor(255, 193, 7); // Yellow
-            doc.rect(0.5, y, 9, 1.2, 'F');
+            doc.rect(0.5, y, 9, 1.0, 'F');
 
             // Warning text
             doc.setFontSize(11);
@@ -343,7 +343,7 @@ async function generarEtiquetaWixPDF(pedido) {
             doc.setFontSize(14);
             doc.text(`COBRAR: $${pedido.monto_cobrar.toLocaleString()}`, 5, y + 0.95, { align: 'center' });
 
-            y += 1.4;
+            y += 1.2;
 
             // Reset text color
             doc.setTextColor(0, 0, 0);
@@ -374,7 +374,7 @@ async function generarEtiquetaWixPDF(pedido) {
         });
 
         // City
-        doc.setFont("helvetica", "bold");
+        doc.setFont("helvetica", "normal");
         doc.text(`Ciudad: ${pedido.ciudad || 'N/A'}`, 0.5, y);
         y += 0.5;
 
