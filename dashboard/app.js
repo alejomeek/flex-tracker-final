@@ -668,20 +668,16 @@ async function importarPedidosWix(pedidosSeleccionados) {
             // Obtener siguiente número serial
             const nextSerial = await getNextSerialNumber();
 
-            // Crear documento en Firestore
-            await addDoc(collection(db, 'pedidos_flex'), {
+            // Crear documento en Firestore (colección pedidos_wix)
+            await addDoc(collection(db, 'pedidos_wix'), {
                 numero_serial: nextSerial,
                 origen: 'wix',
                 numero_envio: `WIX-${pedido.number}`,
-                numero_venta: `WIX-${pedido.number}`,
                 numero_pedido_wix: pedido.number,
                 destinatario: nombre,
                 direccion: direccion,
-                distrito: '',
                 ciudad: ciudad,
                 celular: celular,
-                referencia: '',
-                telefono: null,
                 estado: 'pendiente',
                 fecha_creacion: Timestamp.now(),
                 fecha_entrega: null,
@@ -701,15 +697,41 @@ async function importarPedidosWix(pedidosSeleccionados) {
     return importados;
 }
 
-// Listen to real-time updates from Firestore
+// Listen to real-time updates from BOTH Firestore collections
 function listenToOrders() {
-    const q = query(collection(db, 'pedidos_flex'), orderBy('numero_serial', 'desc'));
+    let flexOrders = [];
+    let wixOrders = [];
 
-    onSnapshot(q, (snapshot) => {
-        allOrders = snapshot.docs.map(doc => ({
+    // Listen to pedidos_flex
+    const qFlex = query(collection(db, 'pedidos_flex'), orderBy('numero_serial', 'desc'));
+    onSnapshot(qFlex, (snapshot) => {
+        flexOrders = snapshot.docs.map(doc => ({
             id: doc.id,
+            coleccion: 'pedidos_flex',
             ...doc.data()
         }));
+        combineAndRenderOrders();
+    }, (error) => {
+        console.error('Error listening to pedidos_flex:', error);
+    });
+
+    // Listen to pedidos_wix
+    const qWix = query(collection(db, 'pedidos_wix'), orderBy('numero_serial', 'desc'));
+    onSnapshot(qWix, (snapshot) => {
+        wixOrders = snapshot.docs.map(doc => ({
+            id: doc.id,
+            coleccion: 'pedidos_wix',
+            ...doc.data()
+        }));
+        combineAndRenderOrders();
+    }, (error) => {
+        console.error('Error listening to pedidos_wix:', error);
+    });
+
+    // Combine orders from both collections
+    function combineAndRenderOrders() {
+        // Combine and sort by numero_serial descending
+        allOrders = [...flexOrders, ...wixOrders].sort((a, b) => b.numero_serial - a.numero_serial);
 
         updateStatistics();
         renderOrders();
@@ -724,11 +746,7 @@ function listenToOrders() {
             emptyState.style.display = 'none';
             tableContainer.style.display = 'block';
         }
-    }, (error) => {
-        console.error('Error listening to orders:', error);
-        loadingState.style.display = 'none';
-        showNotification('Error al cargar los pedidos', 'error');
-    });
+    }
 }
 
 // Update statistics
@@ -770,6 +788,50 @@ function renderOrders() {
         }
     }
 
+    // Determine if we're showing only Wix or mixed/Flex
+    const showingOnlyWix = currentFilter === 'wix';
+    const showingOnlyFlex = currentFilter === 'flex';
+
+    // Update table header based on filter
+    const ordersTableHead = document.getElementById('ordersTableHead');
+    if (showingOnlyWix) {
+        // Wix columns: Serial | Origen | N° Envío | Destinatario | Celular | Dirección | Estado | Repartidor | Fecha Entrega | Recibido por | Acciones
+        ordersTableHead.innerHTML = `
+            <tr>
+                <th>Serial</th>
+                <th>Origen</th>
+                <th>N° Envío</th>
+                <th>Destinatario</th>
+                <th>Celular</th>
+                <th>Dirección</th>
+                <th>Estado</th>
+                <th>Repartidor</th>
+                <th>Fecha Entrega</th>
+                <th>Recibido por</th>
+                <th>Acciones</th>
+            </tr>
+        `;
+    } else {
+        // Flex columns (default): Serial | Origen | N° Envío | N° Venta | Referencia | Destinatario | Dirección | Distrito | Estado | Repartidor | Fecha Entrega | Recibido por | Acciones
+        ordersTableHead.innerHTML = `
+            <tr>
+                <th>Serial</th>
+                <th>Origen</th>
+                <th>N° Envío</th>
+                <th>N° Venta</th>
+                <th>Referencia</th>
+                <th>Destinatario</th>
+                <th>Dirección</th>
+                <th>Distrito</th>
+                <th>Estado</th>
+                <th>Repartidor</th>
+                <th>Fecha Entrega</th>
+                <th>Recibido por</th>
+                <th>Acciones</th>
+            </tr>
+        `;
+    }
+
     // Apply search
     if (searchTerm) {
         filteredOrders = filteredOrders.filter(order => {
@@ -786,41 +848,72 @@ function renderOrders() {
     }
 
     // Render table rows
+    const colspanCount = showingOnlyWix ? 11 : 13;
+
     if (filteredOrders.length === 0 && allOrders.length > 0) {
         ordersTableBody.innerHTML = `
             <tr>
-                <td colspan="13" style="text-align: center; padding: 2rem; color: #6b7280;">
+                <td colspan="${colspanCount}" style="text-align: center; padding: 2rem; color: #6b7280;">
                     No se encontraron pedidos con los filtros aplicados
                 </td>
             </tr>
         `;
     } else {
-        ordersTableBody.innerHTML = filteredOrders.map(order => `
-            <tr>
-                <td><strong>#${order.numero_serial}</strong></td>
-                <td>${getOrigenBadge(order.origen)}</td>
-                <td>${order.numero_envio}</td>
-                <td>${order.numero_venta}</td>
-                <td>${order.referencia || '-'}</td>
-                <td>${order.destinatario}</td>
-                <td>${order.direccion}</td>
-                <td>${order.distrito || '-'}</td>
-                <td>${getStatusBadge(order.estado)}</td>
-                <td>${order.repartidor_nombre || '-'}</td>
-                <td>${formatDate(order.fecha_entrega)}</td>
-                <td>${order.recibido_por || '-'}</td>
-                <td>
-                    ${order.imagen_evidencia_url
-                ? `<button class="btn-view-image" onclick="viewImage('${order.id}')">Ver Foto</button>`
-                : '-'
+        ordersTableBody.innerHTML = filteredOrders.map(order => {
+            const isWix = order.origen === 'wix';
+
+            if (showingOnlyWix || isWix) {
+                // Wix row format
+                return `
+                    <tr>
+                        <td><strong>#${order.numero_serial}</strong></td>
+                        <td>${getOrigenBadge(order.origen)}</td>
+                        <td>${order.numero_envio}</td>
+                        <td>${order.destinatario}</td>
+                        <td>${order.celular || '-'}</td>
+                        <td>${order.direccion}</td>
+                        <td>${getStatusBadge(order.estado)}</td>
+                        <td>${order.repartidor_nombre || '-'}</td>
+                        <td>${formatDate(order.fecha_entrega)}</td>
+                        <td>${order.recibido_por || '-'}</td>
+                        <td>
+                            ${order.imagen_evidencia_url
+                        ? `<button class="btn-view-image" onclick="viewImage('${order.id}', '${order.coleccion}')">Ver Foto</button>`
+                        : '-'
+                    }
+                            ${(order.estado === 'pendiente')
+                        ? `<button class="btn-generate-label" onclick="generarEtiquetaWix('${order.id}')">🏷️ Generar Etiqueta</button>`
+                        : ''
+                    }
+                        </td>
+                    </tr>
+                `;
+            } else {
+                // Flex row format
+                return `
+                    <tr>
+                        <td><strong>#${order.numero_serial}</strong></td>
+                        <td>${getOrigenBadge(order.origen)}</td>
+                        <td>${order.numero_envio}</td>
+                        <td>${order.numero_venta || '-'}</td>
+                        <td>${order.referencia || '-'}</td>
+                        <td>${order.destinatario}</td>
+                        <td>${order.direccion}</td>
+                        <td>${order.distrito || '-'}</td>
+                        <td>${getStatusBadge(order.estado)}</td>
+                        <td>${order.repartidor_nombre || '-'}</td>
+                        <td>${formatDate(order.fecha_entrega)}</td>
+                        <td>${order.recibido_por || '-'}</td>
+                        <td>
+                            ${order.imagen_evidencia_url
+                        ? `<button class="btn-view-image" onclick="viewImage('${order.id}', '${order.coleccion}')">Ver Foto</button>`
+                        : '-'
+                    }
+                        </td>
+                    </tr>
+                `;
             }
-                    ${(order.origen === 'wix' && order.estado === 'pendiente')
-                ? `<button class="btn-generate-label" onclick="generarEtiquetaWix('${order.id}')">🏷️ Generar Etiqueta</button>`
-                : ''
-            }
-                </td>
-            </tr>
-        `).join('');
+        }).join('');
     }
 }
 
