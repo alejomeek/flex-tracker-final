@@ -30,6 +30,11 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+// Wix API Configuration
+const WIX_API_KEY = "IST.eyJraWQiOiJQb3pIX2FDMiIsImFsZyI6IlJTMjU2In0.eyJkYXRhIjoie1wiaWRcIjpcImQwYzY3NjM2LTBkOTctNDFlNy1hYWQ4LThmZTIyNWRjMjFiN1wiLFwiaWRlbnRpdHlcIjp7XCJ0eXBlXCI6XCJhcHBsaWNhdGlvblwiLFwiaWRcIjpcImVkYTRiNzRkLTI1YmYtNDc5My05ZmQ3LWJiODQwYzA5MTQyMlwifSxcInRlbmFudFwiOntcInR5cGVcIjpcImFjY291bnRcIixcImlkXCI6XCI3OTA5ZmY5ZC1kN2U5LTQ4YzktOTcyZi02ZDM1M2VlNmU0NDJcIn19IiwiaWF0IjoxNzY1MjQzNjMxfQ.QmPtRgP-sggDlRYdZVcESBg7wmy4UCi0a8dexIxaqLfIBjySYb4n38tCzCeOjQi_kfyMT-T1ya8eOfh_yXuHGtgDlO_jRlZNOTnMHO4DDldQD97i_o2IjOjkoutB4cVK92XKIOg_WRUoVWTzeubhtB63pAaDubOwm9bPkDaO4LLAY6O7kg9PXScx3jIMndIrar1oDuk4O5gMdQCiCc7c4UsHFk96o4EC2KKzcatIFUpbKAgqM8yH0I7nTKXdXQb87WHVYzIhoMFyJ0SONkfJAVMsl_oLfNcSIuL9486hfh4jq-y5V3o0CcS-SuTb76PemhjozRKDAQJPXaSSRfLNEw";
+const WIX_SITE_ID = "a290c1b4-e593-4126-ae4e-675bd07c1a42";
+
+
 // Global state
 let allOrders = [];
 let currentFilter = 'todos';
@@ -256,6 +261,7 @@ async function handleCreateOrder(e) {
         }
 
         const orderData = {
+            origen: 'flex',
             numero_envio: numeroEnvio,
             numero_venta: document.getElementById('inputNumeroVenta').value.trim(),
             numero_serial: parseInt(document.getElementById('inputNumeroSerial').value),
@@ -263,13 +269,16 @@ async function handleCreateOrder(e) {
             destinatario: document.getElementById('inputDestinatario').value.trim(),
             direccion: document.getElementById('inputDireccion').value.trim(),
             distrito: document.getElementById('inputDistrito').value.trim() || null,
+            ciudad: '',
+            celular: '',
             telefono: document.getElementById('inputTelefono').value.trim() || null,
             estado: 'pendiente',
             fecha_creacion: Timestamp.now(),
             fecha_entrega: null,
             repartidor_id: null,
             repartidor_nombre: null,
-            imagen_evidencia_url: null
+            imagen_evidencia_url: null,
+            recibido_por: null
         };
 
         await addDoc(collection(db, 'pedidos_flex'), orderData);
@@ -326,6 +335,98 @@ function clearDateFilter() {
     dateFilter.value = '';
     updateStatistics();
     renderOrders();
+}
+
+// Wix API Functions
+async function obtenerPedidosWix() {
+    try {
+        const headers = {
+            'Authorization': WIX_API_KEY,
+            'wix-site-id': WIX_SITE_ID,
+            'Content-Type': 'application/json'
+        };
+
+        const url = "https://www.wixapis.com/ecom/v1/orders/search";
+
+        const payload = {
+            "search": {
+                "cursorPaging": {
+                    "limit": 100
+                }
+            }
+        };
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            return data.orders || [];
+        } else {
+            throw new Error(`Error ${response.status}`);
+        }
+    } catch (error) {
+        console.error('Error obteniendo pedidos Wix:', error);
+        showNotification('Error al conectar con Wix', 'error');
+        return [];
+    }
+}
+
+async function importarPedidosWix(pedidosSeleccionados) {
+    let importados = 0;
+
+    for (const pedido of pedidosSeleccionados) {
+        try {
+            // Extraer datos del pedido Wix
+            const billing = pedido.billingInfo || {};
+            const shipping = pedido.shippingInfo || {};
+            const contactDetails = billing.contactDetails || {};
+            const shippingDest = shipping.logistics?.shippingDestination || {};
+            const address = shippingDest.address || {};
+            const shippingContact = shippingDest.contactDetails || {};
+
+            const nombre = `${contactDetails.firstName || ''} ${contactDetails.lastName || ''}`.trim() || 'Sin nombre';
+            const celular = shippingContact.phone || contactDetails.phone || '';
+            const direccion = `${address.addressLine || ''}\n${address.addressLine2 || ''}`.trim() || 'Sin dirección';
+            const ciudad = address.city || '';
+
+            // Obtener siguiente número serial
+            const nextSerial = await getNextSerialNumber();
+
+            // Crear documento en Firestore
+            await addDoc(collection(db, 'pedidos_flex'), {
+                numero_serial: nextSerial,
+                origen: 'wix',
+                numero_envio: `WIX-${pedido.number}`,
+                numero_venta: `WIX-${pedido.number}`,
+                numero_pedido_wix: pedido.number,
+                destinatario: nombre,
+                direccion: direccion,
+                distrito: '',
+                ciudad: ciudad,
+                celular: celular,
+                referencia: '',
+                telefono: null,
+                estado: 'pendiente',
+                fecha_creacion: Timestamp.now(),
+                fecha_entrega: null,
+                repartidor_id: null,
+                repartidor_nombre: null,
+                imagen_evidencia_url: null,
+                recibido_por: null,
+                observaciones_wix: ''
+            });
+
+            importados++;
+        } catch (error) {
+            console.error(`Error importando pedido ${pedido.number}:`, error);
+        }
+    }
+
+    return importados;
 }
 
 // Listen to real-time updates from Firestore
