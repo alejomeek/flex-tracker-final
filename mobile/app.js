@@ -395,6 +395,16 @@ function showPedidoDetails() {
         document.getElementById('pedidoTelefonoRow').style.display = 'none';
     }
 
+    // Show COD banner if applicable
+    const codBanner = document.getElementById('codBanner');
+    if (currentPedido.pago_contraentrega) {
+        const codAmount = document.getElementById('codAmount');
+        codAmount.textContent = `💵 COBRAR: $${currentPedido.monto_cobrar.toLocaleString()}`;
+        codBanner.style.display = 'block';
+    } else {
+        codBanner.style.display = 'none';
+    }
+
     // Set status badge
     const statusElement = document.getElementById('pedidoStatus');
     statusElement.textContent = currentPedido.estado;

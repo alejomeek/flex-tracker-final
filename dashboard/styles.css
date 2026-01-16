@@ -760,3 +760,66 @@ body {
 .btn-generate-label:hover {
     background-color: #059669;
 }
+
+/* COD (Cash On Delivery) Controls */
+.contraentrega-cell {
+    min-width: 180px;
+}
+
+.contraentrega-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+}
+
+.cod-checkbox {
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+}
+
+.cod-amount-input {
+    width: 90px;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    transition: all 0.2s;
+}
+
+.cod-amount-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.cod-amount-input.hidden {
+    display: none;
+}
+
+.btn-save-cod {
+    background-color: #3b82f6;
+    color: white;
+    border: none;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-save-cod:hover {
+    background-color: #2563eb;
+}
+
+.btn-save-cod.hidden {
+    display: none;
+}

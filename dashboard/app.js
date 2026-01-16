@@ -249,7 +249,7 @@ function loadImageAsBase64(url) {
     return new Promise((resolve, reject) => {
         const img = new Image();
         img.crossOrigin = 'Anonymous';
-        img.onload = function() {
+        img.onload = function () {
             const canvas = document.createElement('canvas');
             canvas.width = img.width;
             canvas.height = img.height;
@@ -258,7 +258,7 @@ function loadImageAsBase64(url) {
             const dataURL = canvas.toDataURL('image/png');
             resolve(dataURL);
         };
-        img.onerror = function(error) {
+        img.onerror = function (error) {
             reject(error);
         };
         img.src = url;
@@ -325,6 +325,28 @@ async function generarEtiquetaWixPDF(pedido) {
         doc.setLineWidth(0.02);
         doc.line(0.5, y, 9.5, y);
         y += 0.6;
+
+        // COD Banner (if applicable)
+        if (pedido.pago_contraentrega) {
+            // Yellow background
+            doc.setFillColor(255, 193, 7); // Yellow
+            doc.rect(0.5, y, 9, 1.5, 'F');
+
+            // Warning text
+            doc.setFontSize(14);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(0, 0, 0); // Black
+            doc.text("⚠️ PAGO CONTRAENTREGA ⚠️", 5, y + 0.6, { align: 'center' });
+
+            // Amount text (larger)
+            doc.setFontSize(18);
+            doc.text(`💵 COBRAR: $${pedido.monto_cobrar.toLocaleString()}`, 5, y + 1.2, { align: 'center' });
+
+            y += 1.8;
+
+            // Reset text color
+            doc.setTextColor(0, 0, 0);
+        }
 
         // Recipient info (bold, larger)
         doc.setFontSize(12);
@@ -427,6 +449,59 @@ window.generarEtiquetaWix = async function (orderId) {
         showNotification('Pedido no encontrado o no es de Wix', 'error');
     }
 };
+
+// Toggle COD checkbox
+window.toggleCOD = function (orderId, isChecked) {
+    const amountInput = document.getElementById(`cod-amount-${orderId}`);
+    const saveBtn = document.getElementById(`btn-save-${orderId}`);
+
+    if (isChecked) {
+        amountInput.classList.remove('hidden');
+        saveBtn.classList.remove('hidden');
+        amountInput.focus();
+    } else {
+        amountInput.classList.add('hidden');
+        saveBtn.classList.add('hidden');
+        // Auto-save when unchecking
+        saveCOD(orderId, false);
+    }
+};
+
+// Save COD information
+window.saveCOD = async function (orderId, showConfirmation = true) {
+    const checkbox = document.querySelector(`.cod-checkbox[data-order-id="${orderId}"]`);
+    const amountInput = document.getElementById(`cod-amount-${orderId}`);
+
+    const isCOD = checkbox.checked;
+    const amount = isCOD ? (parseInt(amountInput.value) || 0) : 0;
+
+    try {
+        const order = allOrders.find(o => o.id === orderId);
+        if (!order) {
+            showNotification('Pedido no encontrado', 'error');
+            return;
+        }
+
+        // Update Firestore
+        const orderRef = doc(db, order.coleccion, orderId);
+        await updateDoc(orderRef, {
+            pago_contraentrega: isCOD,
+            monto_cobrar: amount
+        });
+
+        // Update local state
+        order.pago_contraentrega = isCOD;
+        order.monto_cobrar = amount;
+
+        if (showConfirmation) {
+            showNotification(isCOD ? `✅ Marcado como COD: $${amount.toLocaleString()}` : '✅ COD removido', 'success');
+        }
+    } catch (error) {
+        console.error('Error guardando COD:', error);
+        showNotification('Error al guardar', 'error');
+    }
+};
+
 
 
 // Get next serial number from Firestore counter
@@ -725,7 +800,9 @@ async function importarPedidosWix(pedidosSeleccionados) {
                 repartidor_nombre: null,
                 imagen_evidencia_url: null,
                 recibido_por: null,
-                observaciones_wix: ''
+                observaciones_wix: '',
+                pago_contraentrega: false,
+                monto_cobrar: 0
             });
 
             importados++;
@@ -835,7 +912,7 @@ function renderOrders() {
     // Update table header based on filter
     const ordersTableHead = document.getElementById('ordersTableHead');
     if (showingOnlyWix) {
-        // Wix columns: Serial | Origen | N° Envío | Destinatario | Celular | Dirección | Estado | Repartidor | Fecha Entrega | Recibido por | Acciones
+        // Wix columns: Serial | Origen | N° Envío | Destinatario | Celular | Dirección | Contraentrega | Estado | Repartidor | Fecha Entrega | Recibido por | Acciones
         ordersTableHead.innerHTML = `
             <tr>
                 <th>Serial</th>
@@ -844,6 +921,7 @@ function renderOrders() {
                 <th>Destinatario</th>
                 <th>Celular</th>
                 <th>Dirección</th>
+                <th>Contraentrega</th>
                 <th>Estado</th>
                 <th>Repartidor</th>
                 <th>Fecha Entrega</th>
@@ -888,7 +966,7 @@ function renderOrders() {
     }
 
     // Render table rows
-    const colspanCount = showingOnlyWix ? 11 : 13;
+    const colspanCount = showingOnlyWix ? 12 : 13; // Updated for Contraentrega column
 
     if (filteredOrders.length === 0 && allOrders.length > 0) {
         ordersTableBody.innerHTML = `
@@ -912,6 +990,30 @@ function renderOrders() {
                         <td>${order.destinatario}</td>
                         <td>${order.celular || '-'}</td>
                         <td>${order.direccion}</td>
+                        <td class="contraentrega-cell">
+                            <div class="contraentrega-controls">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" 
+                                           class="cod-checkbox" 
+                                           data-order-id="${order.id}"
+                                           ${order.pago_contraentrega ? 'checked' : ''}
+                                           onchange="toggleCOD('${order.id}', this.checked)">
+                                    <span>COD</span>
+                                </label>
+                                <input type="number" 
+                                       class="cod-amount-input ${order.pago_contraentrega ? '' : 'hidden'}" 
+                                       id="cod-amount-${order.id}"
+                                       value="${order.monto_cobrar || 0}"
+                                       placeholder="Monto"
+                                       min="0"
+                                       step="1000">
+                                <button class="btn-save-cod ${order.pago_contraentrega ? '' : 'hidden'}" 
+                                        id="btn-save-${order.id}"
+                                        onclick="saveCOD('${order.id}')">
+                                    💾
+                                </button>
+                            </div>
+                        </td>
                         <td>${getStatusBadge(order.estado)}</td>
                         <td>${order.repartidor_nombre || '-'}</td>
                         <td>${formatDate(order.fecha_entrega)}</td>
