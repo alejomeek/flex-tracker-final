@@ -30,11 +30,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// Wix API Configuration
-const WIX_API_KEY = "IST.eyJraWQiOiJQb3pIX2FDMiIsImFsZyI6IlJTMjU2In0.eyJkYXRhIjoie1wiaWRcIjpcImQwYzY3NjM2LTBkOTctNDFlNy1hYWQ4LThmZTIyNWRjMjFiN1wiLFwiaWRlbnRpdHlcIjp7XCJ0eXBlXCI6XCJhcHBsaWNhdGlvblwiLFwiaWRcIjpcImVkYTRiNzRkLTI1YmYtNDc5My05ZmQ3LWJiODQwYzA5MTQyMlwifSxcInRlbmFudFwiOntcInR5cGVcIjpcImFjY291bnRcIixcImlkXCI6XCI3OTA5ZmY5ZC1kN2U5LTQ4YzktOTcyZi02ZDM1M2VlNmU0NDJcIn19IiwiaWF0IjoxNzY1MjQzNjMxfQ.QmPtRgP-sggDlRYdZVcESBg7wmy4UCi0a8dexIxaqLfIBjySYb4n38tCzCeOjQi_kfyMT-T1ya8eOfh_yXuHGtgDlO_jRlZNOTnMHO4DDldQD97i_o2IjOjkoutB4cVK92XKIOg_WRUoVWTzeubhtB63pAaDubOwm9bPkDaO4LLAY6O7kg9PXScx3jIMndIrar1oDuk4O5gMdQCiCc7c4UsHFk96o4EC2KKzcatIFUpbKAgqM8yH0I7nTKXdXQb87WHVYzIhoMFyJ0SONkfJAVMsl_oLfNcSIuL9486hfh4jq-y5V3o0CcS-SuTb76PemhjozRKDAQJPXaSSRfLNEw";
-const WIX_SITE_ID = "a290c1b4-e593-4126-ae4e-675bd07c1a42";
-
-
 // Global state
 let allOrders = [];
 let currentFilter = 'todos';
@@ -627,31 +622,21 @@ function clearDateFilter() {
 // Wix API Functions
 async function obtenerPedidosWix() {
     try {
-        const headers = {
-            'Authorization': WIX_API_KEY,
-            'wix-site-id': WIX_SITE_ID,
-            'Content-Type': 'application/json'
-        };
-
-        const url = "https://www.wixapis.com/ecom/v1/orders/search";
-
-        const payload = {
-            "search": {
-                "cursorPaging": {
-                    "limit": 100
-                }
-            }
-        };
-
-        const response = await fetch(url, {
+        // Call our serverless function instead of Wix API directly
+        const response = await fetch('/api/wix-orders', {
             method: 'POST',
-            headers: headers,
-            body: JSON.stringify(payload)
+            headers: {
+                'Content-Type': 'application/json'
+            }
         });
 
         if (response.ok) {
             const data = await response.json();
-            return data.orders || [];
+            if (data.success) {
+                return data.orders || [];
+            } else {
+                throw new Error(data.error || 'Error desconocido');
+            }
         } else {
             throw new Error(`Error ${response.status}`);
         }
