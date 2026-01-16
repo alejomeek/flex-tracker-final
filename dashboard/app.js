@@ -343,17 +343,25 @@ async function generarEtiquetaWixPDF(pedido) {
             doc.setFontSize(14);
             doc.text(`COBRAR: $${pedido.monto_cobrar.toLocaleString()}`, 5, y + 0.95, { align: 'center' });
 
-            y += 1.2;
+            y += 1.5;
 
             // Reset text color
             doc.setTextColor(0, 0, 0);
         }
 
-        // Recipient info (bold, larger)
+        // Max width for text wrapping
+        const maxWidth = 8.5; // Max width for text (10cm - 1.5cm margins)
+
+        // Recipient info (bold, larger) - with word wrap
         doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
-        doc.text(`Destinatario: ${pedido.destinatario}`, 0.5, y);
-        y += 0.6;
+        const destinatarioText = `Destinatario: ${pedido.destinatario}`;
+        const destinatarioLines = doc.splitTextToSize(destinatarioText, maxWidth);
+
+        destinatarioLines.forEach((line, index) => {
+            doc.text(line, 0.5, y);
+            y += 0.5;
+        });
 
         // Phone
         doc.setFontSize(10);
@@ -364,7 +372,6 @@ async function generarEtiquetaWixPDF(pedido) {
         // Address (allow multiple lines with word wrap)
         doc.setFontSize(10);
         const direccionText = pedido.direccion || 'N/A';
-        const maxWidth = 8.5; // Max width for text (10cm - 1.5cm margins)
         const direccionLines = doc.splitTextToSize(`Dirección: ${direccionText}`, maxWidth);
 
         // Print all lines of address
