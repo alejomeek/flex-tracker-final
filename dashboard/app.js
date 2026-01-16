@@ -244,6 +244,27 @@ async function confirmarImportacion() {
     }
 }
 
+// Helper function to load image as base64
+function loadImageAsBase64(url) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'Anonymous';
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            const dataURL = canvas.toDataURL('image/png');
+            resolve(dataURL);
+        };
+        img.onerror = function(error) {
+            reject(error);
+        };
+        img.src = url;
+    });
+}
+
 // Generate Wix Label PDF with QR Code
 async function generarEtiquetaWixPDF(pedido) {
     try {
@@ -269,14 +290,15 @@ async function generarEtiquetaWixPDF(pedido) {
 
         let y = 0.5; // Start position
 
-        // Add logo at the top (centered)
-        const logoPath = 'logo transparente.png';
+        // Load and add logo at the top (centered)
         const logoWidth = 3; // 3cm width
         const logoHeight = 0.8; // Will maintain aspect ratio approximately
         const logoX = (10 - logoWidth) / 2; // Center horizontally
 
         try {
-            doc.addImage(logoPath, 'PNG', logoX, y, logoWidth, logoHeight);
+            // Load logo as base64
+            const logoImg = await loadImageAsBase64('logo transparente.png');
+            doc.addImage(logoImg, 'PNG', logoX, y, logoWidth, logoHeight);
             y += logoHeight + 0.3; // Space after logo
         } catch (error) {
             console.warn('Could not load logo:', error);
