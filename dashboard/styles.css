@@ -649,3 +649,98 @@ body {
         border-color: #3b82f6;
     }
 }
+
+/* Wix Integration Styles */
+.header-buttons {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.filter-divider {
+    width: 2px;
+    height: 30px;
+    background-color: #e5e7eb;
+    margin: 0 0.5rem;
+}
+
+.badge-wix {
+    background-color: #e3f2fd;
+    color: #1565c0;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.badge-flex {
+    background-color: #f3e5f5;
+    color: #6a1b9a;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.import-status {
+    text-align: center;
+    padding: 2rem;
+}
+
+.import-status .spinner {
+    margin: 0 auto 1rem;
+}
+
+.pedidos-wix-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.pedido-wix-item {
+    border: 2px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    transition: all 0.2s;
+}
+
+.pedido-wix-item:hover {
+    border-color: #3b82f6;
+    background-color: #f9fafb;
+}
+
+.pedido-wix-item label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    cursor: pointer;
+}
+
+.pedido-wix-item input[type="checkbox"] {
+    margin-top: 0.25rem;
+    width: 1.25rem;
+    height: 1.25rem;
+    cursor: pointer;
+}
+
+.pedido-wix-info {
+    flex: 1;
+}
+
+.pedido-wix-number {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 0.25rem;
+}
+
+.pedido-wix-details {
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: #6b7280;
+}
