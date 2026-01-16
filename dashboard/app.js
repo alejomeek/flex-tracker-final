@@ -10,7 +10,8 @@ import {
     Timestamp,
     doc,
     runTransaction,
-    setDoc
+    setDoc,
+    updateDoc
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
 // PDF Parser import
@@ -998,7 +999,6 @@ function renderOrders() {
                                            data-order-id="${order.id}"
                                            ${order.pago_contraentrega ? 'checked' : ''}
                                            onchange="toggleCOD('${order.id}', this.checked)">
-                                    <span>COD</span>
                                 </label>
                                 <input type="number" 
                                        class="cod-amount-input ${order.pago_contraentrega ? '' : 'hidden'}" 
