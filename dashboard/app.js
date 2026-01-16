@@ -107,6 +107,148 @@ modalViewImage.addEventListener('click', (e) => {
     if (e.target === modalViewImage) closeImageModal();
 });
 
+// Wix Import Modal Elements
+const btnImportWix = document.getElementById('btnImportWix');
+const modalImportWix = document.getElementById('modalImportWix');
+const btnCloseImportWix = document.getElementById('btnCloseImportWix');
+const btnLoadWix = document.getElementById('btnLoadWix');
+const btnConfirmImport = document.getElementById('btnConfirmImport');
+const importStatus = document.getElementById('importStatus');
+const pedidosWixList = document.getElementById('pedidosWixList');
+const emptyWixState = document.getElementById('emptyWixState');
+
+let pedidosWixData = [];
+let pedidosSeleccionados = [];
+
+// Wix Modal Event Listeners
+btnImportWix.addEventListener('click', openImportWixModal);
+btnCloseImportWix.addEventListener('click', closeImportWixModal);
+btnLoadWix.addEventListener('click', cargarPedidosWix);
+btnConfirmImport.addEventListener('click', confirmarImportacion);
+
+modalImportWix.addEventListener('click', (e) => {
+    if (e.target === modalImportWix) closeImportWixModal();
+});
+
+// Wix Modal Functions
+function openImportWixModal() {
+    modalImportWix.classList.add('active');
+    // Reset state
+    pedidosWixData = [];
+    pedidosSeleccionados = [];
+    pedidosWixList.style.display = 'none';
+    importStatus.style.display = 'none';
+    emptyWixState.style.display = 'block';
+    btnConfirmImport.style.display = 'none';
+}
+
+function closeImportWixModal() {
+    modalImportWix.classList.remove('active');
+}
+
+async function cargarPedidosWix() {
+    try {
+        // Show loading
+        emptyWixState.style.display = 'none';
+        importStatus.style.display = 'block';
+        btnLoadWix.disabled = true;
+
+        // Fetch orders from Wix
+        pedidosWixData = await obtenerPedidosWix();
+
+        if (pedidosWixData.length === 0) {
+            importStatus.style.display = 'none';
+            emptyWixState.innerHTML = '<p>No se encontraron pedidos en Wix</p>';
+            emptyWixState.style.display = 'block';
+            btnLoadWix.disabled = false;
+            return;
+        }
+
+        // Render orders list
+        renderPedidosWixList();
+
+        importStatus.style.display = 'none';
+        pedidosWixList.style.display = 'block';
+        btnConfirmImport.style.display = 'block';
+        btnLoadWix.disabled = false;
+
+    } catch (error) {
+        console.error('Error cargando pedidos Wix:', error);
+        importStatus.style.display = 'none';
+        emptyWixState.innerHTML = '<p>Error al cargar pedidos. Intenta de nuevo.</p>';
+        emptyWixState.style.display = 'block';
+        btnLoadWix.disabled = false;
+    }
+}
+
+function renderPedidosWixList() {
+    pedidosWixList.innerHTML = pedidosWixData.map((pedido, index) => {
+        const billing = pedido.billingInfo || {};
+        const shipping = pedido.shippingInfo || {};
+        const contactDetails = billing.contactDetails || {};
+        const shippingDest = shipping.logistics?.shippingDestination || {};
+        const address = shippingDest.address || {};
+
+        const nombre = `${contactDetails.firstName || ''} ${contactDetails.lastName || ''}`.trim() || 'Sin nombre';
+        const ciudad = address.city || 'Sin ciudad';
+
+        // Get total price
+        const priceSummary = pedido.priceSummary || {};
+        const totalObj = priceSummary.total || {};
+        const totalAmount = typeof totalObj === 'object' ? totalObj.amount : totalObj;
+        const total = totalAmount ? `$${parseFloat(totalAmount).toLocaleString()}` : 'N/A';
+
+        return `
+            <div class="pedido-wix-item">
+                <label>
+                    <input type="checkbox" 
+                           data-index="${index}" 
+                           onchange="togglePedidoSelection(${index})">
+                    <div class="pedido-wix-info">
+                        <div class="pedido-wix-number">#${pedido.number}</div>
+                        <div class="pedido-wix-details">
+                            ${nombre} - ${ciudad} - ${total}
+                        </div>
+                    </div>
+                </label>
+            </div>
+        `;
+    }).join('');
+}
+
+window.togglePedidoSelection = function (index) {
+    const checkbox = document.querySelector(`input[data-index="${index}"]`);
+    if (checkbox.checked) {
+        pedidosSeleccionados.push(pedidosWixData[index]);
+    } else {
+        pedidosSeleccionados = pedidosSeleccionados.filter(p => p.number !== pedidosWixData[index].number);
+    }
+};
+
+async function confirmarImportacion() {
+    if (pedidosSeleccionados.length === 0) {
+        showNotification('Selecciona al menos un pedido', 'error');
+        return;
+    }
+
+    try {
+        btnConfirmImport.disabled = true;
+        btnConfirmImport.textContent = 'Importando...';
+
+        const importados = await importarPedidosWix(pedidosSeleccionados);
+
+        showNotification(`✅ ${importados} pedidos importados exitosamente`, 'success');
+        closeImportWixModal();
+
+    } catch (error) {
+        console.error('Error importando pedidos:', error);
+        showNotification('Error al importar pedidos', 'error');
+    } finally {
+        btnConfirmImport.disabled = false;
+        btnConfirmImport.textContent = '✅ Importar Seleccionados';
+    }
+}
+
 // Get next serial number from Firestore counter
 async function getNextSerialNumber() {
     const counterRef = doc(db, 'contadores', 'pedidos_flex_counter');
@@ -489,7 +631,13 @@ function renderOrders() {
 
     // Apply filter
     if (currentFilter !== 'todos') {
-        filteredOrders = filteredOrders.filter(order => order.estado === currentFilter);
+        if (currentFilter === 'flex' || currentFilter === 'wix') {
+            // Filter by origin
+            filteredOrders = filteredOrders.filter(order => (order.origen || 'flex') === currentFilter);
+        } else {
+            // Filter by status
+            filteredOrders = filteredOrders.filter(order => order.estado === currentFilter);
+        }
     }
 
     // Apply search
@@ -511,7 +659,7 @@ function renderOrders() {
     if (filteredOrders.length === 0 && allOrders.length > 0) {
         ordersTableBody.innerHTML = `
             <tr>
-                <td colspan="12" style="text-align: center; padding: 2rem; color: #6b7280;">
+                <td colspan="13" style="text-align: center; padding: 2rem; color: #6b7280;">
                     No se encontraron pedidos con los filtros aplicados
                 </td>
             </tr>
@@ -520,6 +668,7 @@ function renderOrders() {
         ordersTableBody.innerHTML = filteredOrders.map(order => `
             <tr>
                 <td><strong>#${order.numero_serial}</strong></td>
+                <td>${getOrigenBadge(order.origen)}</td>
                 <td>${order.numero_envio}</td>
                 <td>${order.numero_venta}</td>
                 <td>${order.referencia || '-'}</td>
@@ -550,6 +699,16 @@ function getStatusBadge(estado) {
     };
     return badges[estado] || estado;
 }
+
+// Get origin badge HTML
+function getOrigenBadge(origen) {
+    const origenValue = origen || 'flex';
+    if (origenValue === 'wix') {
+        return '<span class="badge-wix">🛒 Wix</span>';
+    }
+    return '<span class="badge-flex">📦 Flex</span>';
+}
+
 
 // Format date
 function formatDate(timestamp) {
