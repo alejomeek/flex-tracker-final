@@ -367,17 +367,9 @@ async function generarEtiquetaWixPDF(pedido) {
         // Clean up
         document.body.removeChild(qrContainer);
 
-        // Download PDF with explicit MIME type
-        const pdfBlob = doc.output('blob');
-        const url = URL.createObjectURL(pdfBlob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `WIX_${pedido.numero_pedido_wix}_${pedido.numero_serial}.pdf`;
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        setTimeout(() => URL.revokeObjectURL(url), 100);
+        // Download PDF using jsPDF's save method (forces download)
+        const fileName = `WIX_${pedido.numero_pedido_wix}_${pedido.numero_serial}.pdf`;
+        doc.save(fileName);
 
         showNotification('✅ Etiqueta PDF generada', 'success');
 
