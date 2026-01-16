@@ -835,3 +835,19 @@ body {
     cursor: not-allowed;
     opacity: 0.7;
 }
+
+/* Wider columns for specific fields */
+/* Referencia column in Flex table (5th column) */
+.orders-table th:nth-child(5),
+.orders-table td:nth-child(5) {
+    min-width: 180px;
+    max-width: 250px;
+}
+
+/* Dirección column in Wix table (6th column) */
+.orders-table th:nth-child(6),
+.orders-table td:nth-child(6) {
+    min-width: 200px;
+    max-width: 300px;
+}
+
