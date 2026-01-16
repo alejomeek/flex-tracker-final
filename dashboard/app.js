@@ -331,19 +331,19 @@ async function generarEtiquetaWixPDF(pedido) {
         if (pedido.pago_contraentrega) {
             // Yellow background
             doc.setFillColor(255, 193, 7); // Yellow
-            doc.rect(0.5, y, 9, 1.5, 'F');
+            doc.rect(0.5, y, 9, 1.2, 'F');
 
             // Warning text
-            doc.setFontSize(14);
+            doc.setFontSize(11);
             doc.setFont("helvetica", "bold");
             doc.setTextColor(0, 0, 0); // Black
-            doc.text("⚠️ PAGO CONTRAENTREGA ⚠️", 5, y + 0.6, { align: 'center' });
+            doc.text("*** PAGO CONTRAENTREGA ***", 5, y + 0.5, { align: 'center' });
 
-            // Amount text (larger)
-            doc.setFontSize(18);
-            doc.text(`💵 COBRAR: $${pedido.monto_cobrar.toLocaleString()}`, 5, y + 1.2, { align: 'center' });
+            // Amount text
+            doc.setFontSize(14);
+            doc.text(`COBRAR: $${pedido.monto_cobrar.toLocaleString()}`, 5, y + 0.95, { align: 'center' });
 
-            y += 1.8;
+            y += 1.4;
 
             // Reset text color
             doc.setTextColor(0, 0, 0);
