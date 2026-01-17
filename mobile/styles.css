@@ -656,3 +656,15 @@ body {
     font-size: 0.875rem;
     min-height: auto;
 }
+
+/* Login Screen Logo */
+.login-logo-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2rem;
+}
+
+.login-logo {
+    width: 250px;
+    height: auto;
+}
