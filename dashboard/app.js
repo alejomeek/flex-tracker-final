@@ -33,7 +33,8 @@ const db = getFirestore(app);
 
 // Global state
 let allOrders = [];
-let currentFilter = 'flex'; // Default: show only Flex orders
+let currentOriginFilter = 'flex'; // 'flex' or 'wix'
+let currentStatusFilter = 'todos'; // 'todos', 'pendiente', 'entregado', 'no_entregado'
 let searchTerm = '';
 let selectedDate = getTodayDateString(); // Default: today
 
@@ -77,11 +78,24 @@ searchInput.addEventListener('input', handleSearch);
 btnUploadPDF.addEventListener('click', () => inputPDFFile.click());
 inputPDFFile.addEventListener('change', handlePDFUpload);
 
-filterButtons.forEach(btn => {
+// Filter button event listeners - Hierarchical
+const originButtons = document.querySelectorAll('.filter-origin');
+const statusButtons = document.querySelectorAll('.filter-status');
+
+originButtons.forEach(btn => {
     btn.addEventListener('click', () => {
-        filterButtons.forEach(b => b.classList.remove('active'));
+        originButtons.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        currentFilter = btn.dataset.filter;
+        currentOriginFilter = btn.dataset.filter;
+        renderOrders();
+    });
+});
+
+statusButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+        statusButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentStatusFilter = btn.dataset.filter;
         renderOrders();
     });
 });
@@ -902,20 +916,17 @@ function renderOrders() {
         filteredOrders = filteredOrders.filter(order => isSameDay(order.fecha_creacion, selectedDate));
     }
 
-    // Apply filter
-    if (currentFilter !== 'todos') {
-        if (currentFilter === 'flex' || currentFilter === 'wix') {
-            // Filter by origin
-            filteredOrders = filteredOrders.filter(order => (order.origen || 'flex') === currentFilter);
-        } else {
-            // Filter by status
-            filteredOrders = filteredOrders.filter(order => order.estado === currentFilter);
-        }
+    // Apply origin filter (always applied)
+    filteredOrders = filteredOrders.filter(order => (order.origen || 'flex') === currentOriginFilter);
+
+    // Apply status filter (if not "todos")
+    if (currentStatusFilter !== 'todos') {
+        filteredOrders = filteredOrders.filter(order => order.estado === currentStatusFilter);
     }
 
-    // Determine if we're showing only Wix or mixed/Flex
-    const showingOnlyWix = currentFilter === 'wix';
-    const showingOnlyFlex = currentFilter === 'flex';
+    // Determine which table layout to show based on origin
+    const showingOnlyWix = currentOriginFilter === 'wix';
+    const showingOnlyFlex = currentOriginFilter === 'flex';
 
     // Update table header based on filter
     const ordersTableHead = document.getElementById('ordersTableHead');

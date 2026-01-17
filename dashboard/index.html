@@ -69,16 +69,26 @@
                     <button class="btn-clear-date" id="btnClearDate">Ver Todos</button>
                 </div>
 
-                <div class="filter-buttons">
-                    <button class="filter-btn" data-filter="todos">Todos</button>
-                    <button class="filter-btn" data-filter="pendiente">Pendientes</button>
-                    <button class="filter-btn" data-filter="entregado">Entregados</button>
-                    <button class="filter-btn" data-filter="no_entregado">No Entregados</button>
+                <div class="filter-section">
+                    <!-- Origin Filter (Level 1) -->
+                    <div class="filter-group">
+                        <label class="filter-label">Origen:</label>
+                        <div class="filter-buttons">
+                            <button class="filter-btn filter-origin active" data-filter="flex">📦 Flex</button>
+                            <button class="filter-btn filter-origin" data-filter="wix">🛒 Wix</button>
+                        </div>
+                    </div>
 
-                    <div class="filter-divider"></div>
-
-                    <button class="filter-btn active" data-filter="flex">📦 Flex</button>
-                    <button class="filter-btn" data-filter="wix">🛒 Wix</button>
+                    <!-- Status Filter (Level 2) -->
+                    <div class="filter-group">
+                        <label class="filter-label">Estado:</label>
+                        <div class="filter-buttons">
+                            <button class="filter-btn filter-status active" data-filter="todos">Todos</button>
+                            <button class="filter-btn filter-status" data-filter="pendiente">Pendientes</button>
+                            <button class="filter-btn filter-status" data-filter="entregado">Entregados</button>
+                            <button class="filter-btn filter-status" data-filter="no_entregado">No Entregados</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 

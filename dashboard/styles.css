@@ -859,3 +859,30 @@ body {
     white-space: nowrap;
 }
 
+
+/* Hierarchical Filter Styles */
+.filter-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.filter-label {
+    font-weight: 600;
+    color: #374151;
+    min-width: 60px;
+    font-size: 0.9rem;
+}
+
+.filter-group .filter-buttons {
+    flex: 1;
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
