@@ -1029,7 +1029,7 @@ function renderOrders() {
                         <td>
                             ${order.imagen_evidencia_url
                         ? `<button class="btn-view-image" onclick="viewImage('${order.id}', '${order.coleccion}')">Ver Foto</button>`
-                        : '-'
+                        : ''
                     }
                             ${(order.estado === 'pendiente')
                         ? `<button class="btn-generate-label" onclick="generarEtiquetaWix('${order.id}')">🏷️ Generar Etiqueta</button>`
