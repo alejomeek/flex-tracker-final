@@ -329,15 +329,30 @@ body {
 
 .manual-input-field {
     flex: 1;
-    padding: 0.75rem;
+    padding: 0.5rem;
     border: 2px solid #e5e7eb;
     border-radius: 0.5rem;
-    font-size: 1rem;
+    font-size: 0.875rem;
 }
 
 .manual-input-field:focus {
     outline: none;
     border-color: #3b82f6;
+}
+
+/* Mobile Logo */
+.mobile-logo-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 2rem;
+    padding: 1rem;
+}
+
+.mobile-logo {
+    width: 200px;
+    height: auto;
+    opacity: 0.9;
 }
 
 /* Pedido Card */
@@ -634,4 +649,10 @@ body {
         -webkit-user-select: none;
         -webkit-touch-callout: none;
     }
+}
+/* Smaller button for manual search */
+#btnManualSearch {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    min-height: auto;
 }
