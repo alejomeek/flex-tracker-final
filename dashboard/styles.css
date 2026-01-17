@@ -22,7 +22,7 @@ body {
 .header {
     background-color: #3b82f6;
     color: white;
-    padding: 1rem 0;
+    padding: 0.35rem 0;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
@@ -41,7 +41,7 @@ body {
 }
 
 .header-logo {
-    height: 85px;
+    height: 106px;
     width: auto;
 }
 
