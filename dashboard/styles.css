@@ -851,3 +851,11 @@ body {
     max-width: 300px;
 }
 
+
+/* Origen column (2nd column) - wider for emoji + text */
+.orders-table th:nth-child(2),
+.orders-table td:nth-child(2) {
+    min-width: 90px;
+    white-space: nowrap;
+}
+
