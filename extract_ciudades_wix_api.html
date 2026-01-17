@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extraer Ciudades Wix API</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #00ff00;
+            text-align: center;
+        }
+
+        #output {
+            background: #000;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 2px solid #00ff00;
+            white-space: pre-wrap;
+            font-size: 14px;
+            line-height: 1.5;
+            min-height: 400px;
+        }
+
+        button {
+            background: #00ff00;
+            color: #000;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            display: block;
+            margin: 1rem auto;
+        }
+
+        button:hover {
+            background: #00cc00;
+        }
+
+        .loading {
+            text-align: center;
+            color: #ffff00;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🔍 Extractor de Ciudades - Wix API</h1>
+    <button onclick="extractCiudades()">▶️ Extraer Ciudades desde Wix</button>
+    <div id="output">Presiona el botón para extraer las ciudades directamente desde Wix API...</div>
+
+    <script>
+        async function extractCiudades() {
+            const output = document.getElementById('output');
+            output.innerHTML = '<div class="loading">⏳ Consultando Wix API...</div>';
+
+            try {
+                // Usar el serverless function de Vercel
+                const response = await fetch('/api/wix-orders', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.error || 'Error desconocido');
+                }
+
+                const orders = data.orders || [];
+
+                const ciudades = [];
+                const ciudadesCount = {};
+
+                orders.forEach(order => {
+                    const shipping = order.shippingInfo || {};
+                    const shippingDest = shipping.logistics?.shippingDestination || {};
+                    const address = shippingDest.address || {};
+                    const ciudad = address.city || 'Sin ciudad';
+
+                    const billing = order.billingInfo || {};
+                    const contactDetails = billing.contactDetails || {};
+                    const nombre = `${contactDetails.firstName || ''} ${contactDetails.lastName || ''}`.trim() || 'Sin nombre';
+
+                    ciudades.push({
+                        orderNumber: order.number,
+                        ciudad: ciudad,
+                        destinatario: nombre
+                    });
+
+                    ciudadesCount[ciudad] = (ciudadesCount[ciudad] || 0) + 1;
+                });
+
+                let result = '';
+                result += '═══════════════════════════════════════════════════\n';
+                result += '📊 RESUMEN DE CIUDADES (desde Wix API)\n';
+                result += '═══════════════════════════════════════════════════\n\n';
+
+                const sortedCiudades = Object.entries(ciudadesCount)
+                    .sort((a, b) => b[1] - a[1]);
+
+                sortedCiudades.forEach(([ciudad, count]) => {
+                    const percentage = ((count / ciudades.length) * 100).toFixed(1);
+                    result += `${ciudad.padEnd(30, ' ')} ${count.toString().padStart(3, ' ')} pedidos (${percentage}%)\n`;
+                });
+
+                result += '\n═══════════════════════════════════════════════════\n';
+                result += '📋 DETALLE DE PEDIDOS\n';
+                result += '═══════════════════════════════════════════════════\n\n';
+
+                ciudades.forEach(pedido => {
+                    result += `WIX-${pedido.orderNumber} | ${pedido.ciudad} | ${pedido.destinatario}\n`;
+                });
+
+                result += `\n✅ Total: ${ciudades.length} pedidos analizados desde Wix API`;
+
+                output.textContent = result;
+
+            } catch (error) {
+                output.innerHTML = `<span style="color: #ff0000;">❌ Error: ${error.message}</span>`;
+                console.error('Error:', error);
+            }
+        }
+    </script>
+</body>
+
+</html>
