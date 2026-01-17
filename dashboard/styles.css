@@ -34,9 +34,21 @@ body {
     gap: 1rem;
 }
 
+.header-brand {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.header-logo {
+    height: 48px;
+    width: auto;
+}
+
 .header-title {
     font-size: 1.75rem;
     font-weight: 700;
+    margin: 0;
 }
 
 /* Buttons */
