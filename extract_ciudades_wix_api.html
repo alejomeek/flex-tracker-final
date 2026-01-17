@@ -89,6 +89,27 @@
                 const ciudades = [];
                 const ciudadesCount = {};
 
+                let result = '';
+                result += '═══════════════════════════════════════════════════\n';
+                result += '🔍 ESTRUCTURA COMPLETA DE ADDRESS (Primeros 5 pedidos)\n';
+                result += '═══════════════════════════════════════════════════\n\n';
+
+                // Mostrar estructura completa de los primeros 5 pedidos
+                orders.slice(0, 5).forEach((order, index) => {
+                    const shipping = order.shippingInfo || {};
+                    const shippingDest = shipping.logistics?.shippingDestination || {};
+                    const address = shippingDest.address || {};
+
+                    result += `\n📦 PEDIDO ${index + 1}: WIX-${order.number}\n`;
+                    result += '─────────────────────────────────────────────────\n';
+                    result += JSON.stringify(address, null, 2);
+                    result += '\n';
+                });
+
+                result += '\n═══════════════════════════════════════════════════\n';
+                result += '📊 RESUMEN DE CIUDADES (desde Wix API)\n';
+                result += '═══════════════════════════════════════════════════\n\n';
+
                 orders.forEach(order => {
                     const shipping = order.shippingInfo || {};
                     const shippingDest = shipping.logistics?.shippingDestination || {};
@@ -108,10 +129,7 @@
                     ciudadesCount[ciudad] = (ciudadesCount[ciudad] || 0) + 1;
                 });
 
-                let result = '';
-                result += '═══════════════════════════════════════════════════\n';
-                result += '📊 RESUMEN DE CIUDADES (desde Wix API)\n';
-                result += '═══════════════════════════════════════════════════\n\n';
+
 
                 const sortedCiudades = Object.entries(ciudadesCount)
                     .sort((a, b) => b[1] - a[1]);
