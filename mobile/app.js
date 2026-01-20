@@ -43,6 +43,7 @@ let currentRepartidor = null;
 let currentPedido = null;
 let capturedPhoto = null;
 let html5QrCode = null;
+let flashlightOn = false;
 
 // DOM elements
 const screenLogin = document.getElementById('screenLogin');
@@ -106,6 +107,7 @@ function init() {
     btnLogout.addEventListener('click', handleLogout);
     btnStartScan.addEventListener('click', startScanner);
     btnCloseScanner.addEventListener('click', stopScanner);
+    document.getElementById('btnFlashlight').addEventListener('click', toggleFlashlight);
     btnManualSearch.addEventListener('click', handleManualSearch);
     btnBackToScanner.addEventListener('click', () => {
         resetPedidoScreen();
@@ -213,7 +215,9 @@ function startScanner() {
 
     const config = {
         fps: 10,
-        qrbox: { width: 250, height: 250 }
+        qrbox: { width: 250, height: 250 },
+        // Request torch/flashlight capability
+        advanced: [{ torch: true }]
     };
 
     html5QrCode.start(
@@ -226,7 +230,28 @@ function startScanner() {
         (errorMessage) => {
             // Ignore scan errors (happens continuously while scanning)
         }
-    ).catch(err => {
+    ).then(() => {
+        // Try to enable flashlight automatically after scanner starts
+        const capabilities = html5QrCode.getRunningTrackCapabilities();
+        if (capabilities && capabilities.torch) {
+            // Show flashlight button
+            const btnFlashlight = document.getElementById('btnFlashlight');
+            btnFlashlight.style.display = 'block';
+
+            // Auto-enable flashlight for night scanning
+            setTimeout(() => {
+                try {
+                    html5QrCode.applyVideoConstraints({
+                        advanced: [{ torch: true }]
+                    });
+                    flashlightOn = true;
+                    updateFlashlightIcon();
+                } catch (err) {
+                    console.log('Torch not available:', err);
+                }
+            }, 500);
+        }
+    }).catch(err => {
         console.error('Error starting scanner:', err);
         showNotification('Error al iniciar la cámara', 'error');
         stopScanner();
@@ -246,6 +271,35 @@ function stopScanner() {
 
     scannerContainer.style.display = 'none';
     btnStartScan.style.display = 'block';
+
+    // Hide and reset flashlight button
+    const btnFlashlight = document.getElementById('btnFlashlight');
+    btnFlashlight.style.display = 'none';
+    flashlightOn = false;
+}
+
+// Toggle flashlight
+function toggleFlashlight() {
+    if (!html5QrCode) return;
+
+    try {
+        html5QrCode.applyVideoConstraints({
+            advanced: [{ torch: !flashlightOn }]
+        });
+        flashlightOn = !flashlightOn;
+        updateFlashlightIcon();
+    } catch (err) {
+        console.error('Error toggling flashlight:', err);
+        showNotification('Error al cambiar linterna', 'error');
+    }
+}
+
+// Update flashlight icon
+function updateFlashlightIcon() {
+    const flashIcon = document.getElementById('flashIcon');
+    if (flashIcon) {
+        flashIcon.textContent = flashlightOn ? '🔦' : '💡';
+    }
 }
 
 // Handle manual search
