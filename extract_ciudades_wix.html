@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extraer Ciudades Wix</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #00ff00;
+            text-align: center;
+        }
+
+        #output {
+            background: #000;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 2px solid #00ff00;
+            white-space: pre-wrap;
+            font-size: 14px;
+            line-height: 1.5;
+            min-height: 400px;
+        }
+
+        button {
+            background: #00ff00;
+            color: #000;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            display: block;
+            margin: 1rem auto;
+        }
+
+        button:hover {
+            background: #00cc00;
+        }
+
+        .loading {
+            text-align: center;
+            color: #ffff00;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🔍 Extractor de Ciudades - Pedidos Wix</h1>
+    <button onclick="extractCiudades()">▶️ Extraer Ciudades</button>
+    <div id="output">Presiona el botón para extraer las ciudades de los últimos 50 pedidos Wix...</div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import {
+            getFirestore,
+            collection,
+            query,
+            orderBy,
+            limit,
+            getDocs
+        } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDdADxF5YQcx_MQYqOKXOqXqQqXqQqXqQq",
+            authDomain: "flex-tracker-ce54b.firebaseapp.com",
+            projectId: "flex-tracker-ce54b",
+            storageBucket: "flex-tracker-ce54b.firebasestorage.app",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:abcdefghijk"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.extractCiudades = async function () {
+            const output = document.getElementById('output');
+            output.innerHTML = '<div class="loading">⏳ Cargando datos de Firestore...</div>';
+
+            try {
+                const q = query(
+                    collection(db, 'pedidos_wix'),
+                    orderBy('numero_serial', 'desc'),
+                    limit(50)
+                );
+
+                const snapshot = await getDocs(q);
+
+                const ciudades = [];
+                const ciudadesCount = {};
+
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const ciudad = data.ciudad || 'Sin ciudad';
+                    ciudades.push({
+                        serial: data.numero_serial,
+                        pedido: data.numero_pedido_wix,
+                        ciudad: ciudad,
+                        destinatario: data.destinatario
+                    });
+
+                    ciudadesCount[ciudad] = (ciudadesCount[ciudad] || 0) + 1;
+                });
+
+                let result = '';
+                result += '═══════════════════════════════════════════════════\n';
+                result += '📊 RESUMEN DE CIUDADES\n';
+                result += '═══════════════════════════════════════════════════\n\n';
+
+                const sortedCiudades = Object.entries(ciudadesCount)
+                    .sort((a, b) => b[1] - a[1]);
+
+                sortedCiudades.forEach(([ciudad, count]) => {
+                    const percentage = ((count / ciudades.length) * 100).toFixed(1);
+                    result += `${ciudad.padEnd(30, ' ')} ${count.toString().padStart(3, ' ')} pedidos (${percentage}%)\n`;
+                });
+
+                result += '\n═══════════════════════════════════════════════════\n';
+                result += '📋 DETALLE DE PEDIDOS\n';
+                result += '═══════════════════════════════════════════════════\n\n';
+
+                ciudades.forEach(pedido => {
+                    result += `#${pedido.serial} | WIX-${pedido.pedido} | ${pedido.ciudad} | ${pedido.destinatario}\n`;
+                });
+
+                result += `\n✅ Total: ${ciudades.length} pedidos analizados`;
+
+                output.textContent = result;
+
+            } catch (error) {
+                output.innerHTML = `<span style="color: #ff0000;">❌ Error: ${error.message}</span>`;
+                console.error('Error:', error);
+            }
+        };
+    </script>
+</body>
+
+</html>
