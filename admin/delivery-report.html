@@ -908,7 +908,7 @@
                 if (logoEmpresa) {
                     try {
                         // Position next to Halcon logo with proper size to show full logo
-                        doc.addImage(logoEmpresa, 'PNG', 42, yPos, 35, 25);
+                        doc.addImage(logoEmpresa, 'PNG', 42, yPos, 50, 25);
                     } catch (e) {
                         console.warn('Could not add company logo to PDF:', e);
                     }
@@ -1054,6 +1054,79 @@
 
                     yPos = doc.lastAutoTable.finalY + 10;
                 });
+
+                // Add TOTAL section at the end
+                // Check if we need a new page for the total
+                if (yPos > pageHeight - 80) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+
+                yPos += 10; // Extra spacing before total
+
+                // TOTAL header with gradient-like effect
+                doc.setFillColor(34, 197, 94); // Green color
+                doc.rect(15, yPos - 5, pageWidth - 30, 12, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(14);
+                doc.text('TOTAL GENERAL', pageWidth / 2, yPos + 3, { align: 'center' });
+
+                yPos += 15;
+                doc.setTextColor(0, 0, 0);
+
+                // Calculate totals
+                const grandTotalVisits = reportData.reduce((sum, r) => sum + r.totalVisits, 0);
+                const grandTotalPedidos = reportData.reduce((sum, r) => sum + r.totalPedidos, 0);
+                const grandTotalMultiple = reportData.reduce((sum, r) => sum + r.multipleVisits, 0);
+
+                // Create summary boxes
+                const boxWidth = (pageWidth - 50) / 3;
+                const boxHeight = 25;
+                const startX = 20;
+
+                // Box 1: Total Visitas
+                doc.setFillColor(239, 246, 255); // Light blue
+                doc.rect(startX, yPos, boxWidth, boxHeight, 'F');
+                doc.setDrawColor(59, 130, 246);
+                doc.rect(startX, yPos, boxWidth, boxHeight, 'S');
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(20);
+                doc.setTextColor(59, 130, 246);
+                doc.text(grandTotalVisits.toString(), startX + boxWidth / 2, yPos + 12, { align: 'center' });
+                doc.setFontSize(9);
+                doc.setTextColor(75, 85, 99);
+                doc.text('Visitas Pagables', startX + boxWidth / 2, yPos + 20, { align: 'center' });
+
+                // Box 2: Total Pedidos
+                doc.setFillColor(243, 244, 246); // Light gray
+                doc.rect(startX + boxWidth + 5, yPos, boxWidth, boxHeight, 'F');
+                doc.setDrawColor(107, 114, 128);
+                doc.rect(startX + boxWidth + 5, yPos, boxWidth, boxHeight, 'S');
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(20);
+                doc.setTextColor(107, 114, 128);
+                doc.text(grandTotalPedidos.toString(), startX + boxWidth + 5 + boxWidth / 2, yPos + 12, { align: 'center' });
+                doc.setFontSize(9);
+                doc.setTextColor(75, 85, 99);
+                doc.text('Pedidos Entregados', startX + boxWidth + 5 + boxWidth / 2, yPos + 20, { align: 'center' });
+
+                // Box 3: Visitas Múltiples
+                doc.setFillColor(254, 243, 199); // Light yellow
+                doc.rect(startX + (boxWidth + 5) * 2, yPos, boxWidth, boxHeight, 'F');
+                doc.setDrawColor(251, 191, 36);
+                doc.rect(startX + (boxWidth + 5) * 2, yPos, boxWidth, boxHeight, 'S');
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(20);
+                doc.setTextColor(251, 191, 36);
+                doc.text(grandTotalMultiple.toString(), startX + (boxWidth + 5) * 2 + boxWidth / 2, yPos + 12, { align: 'center' });
+                doc.setFontSize(9);
+                doc.setTextColor(75, 85, 99);
+                doc.text('Visitas Múltiples', startX + (boxWidth + 5) * 2 + boxWidth / 2, yPos + 20, { align: 'center' });
+
+                yPos += boxHeight + 5;
+                doc.setTextColor(0, 0, 0);
+
 
                 // Footer on last page
                 const pageCount = doc.internal.getNumberOfPages();
