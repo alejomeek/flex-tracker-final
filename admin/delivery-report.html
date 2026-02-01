@@ -874,23 +874,21 @@
             XLSX.writeFile(wb, filename);
         }
 
-        // Load image as base64
+        // Load image as base64 using fetch
         async function loadImageAsBase64(imagePath) {
-            return new Promise((resolve, reject) => {
-                const img = new Image();
-                img.crossOrigin = 'Anonymous';
-                img.onload = function () {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0);
-                    const dataURL = canvas.toDataURL('image/png');
-                    resolve(dataURL);
-                };
-                img.onerror = reject;
-                img.src = imagePath;
-            });
+            try {
+                const response = await fetch(imagePath);
+                const blob = await response.blob();
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+            } catch (error) {
+                console.error('Error loading image:', imagePath, error);
+                throw error;
+            }
         }
 
         // Export to PDF
@@ -901,17 +899,38 @@
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF('p', 'mm', 'a4');
 
-                // Load logos
-                const logoHalcon = await loadImageAsBase64('logo_halcon.png');
-                const logoEmpresa = await loadImageAsBase64('logo transparente.png');
+                // Load logos (with error handling)
+                let logoHalcon, logoEmpresa;
+                try {
+                    logoHalcon = await loadImageAsBase64('logo_halcon.png');
+                } catch (e) {
+                    console.warn('Could not load Halcon logo:', e);
+                }
+                try {
+                    logoEmpresa = await loadImageAsBase64('logo transparente.png');
+                } catch (e) {
+                    console.warn('Could not load company logo:', e);
+                }
 
                 const pageWidth = doc.internal.pageSize.getWidth();
                 const pageHeight = doc.internal.pageSize.getHeight();
                 let yPos = 15;
 
-                // Header with logos
-                doc.addImage(logoHalcon, 'PNG', 15, yPos, 25, 25);
-                doc.addImage(logoEmpresa, 'PNG', pageWidth - 40, yPos, 25, 25);
+                // Header with logos (if loaded)
+                if (logoHalcon) {
+                    try {
+                        doc.addImage(logoHalcon, 'PNG', 15, yPos, 25, 25);
+                    } catch (e) {
+                        console.warn('Could not add Halcon logo to PDF:', e);
+                    }
+                }
+                if (logoEmpresa) {
+                    try {
+                        doc.addImage(logoEmpresa, 'PNG', pageWidth - 40, yPos, 25, 25);
+                    } catch (e) {
+                        console.warn('Could not add company logo to PDF:', e);
+                    }
+                }
 
                 // Company info
                 yPos += 10;
