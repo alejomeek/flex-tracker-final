@@ -499,6 +499,14 @@
                             <span class="info-value">${pedido.repartidor_nombre}</span>
                         </div>
                         ` : ''}
+                        <div class="info-item">
+                            <span class="info-label">Fecha Creación:</span>
+                            <span class="info-value">${pedido.fecha_creacion ? formatDate(pedido.fecha_creacion) : '-'}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Fecha Entrega:</span>
+                            <span class="info-value">${pedido.fecha_entrega ? formatDate(pedido.fecha_entrega) : '-'}</span>
+                        </div>
                     </div>
                     
                     <div class="pedido-actions">
@@ -516,6 +524,24 @@
                     </div>
                 </div>
             `).join('');
+        }
+
+        // Format date function
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            try {
+                const date = new Date(dateString);
+                const options = {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                };
+                return date.toLocaleDateString('es-PE', options);
+            } catch (error) {
+                return dateString;
+            }
         }
 
         // Get status text
