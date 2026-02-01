@@ -907,7 +907,8 @@
                 }
                 if (logoEmpresa) {
                     try {
-                        doc.addImage(logoEmpresa, 'PNG', pageWidth - 40, yPos, 25, 25);
+                        // Position next to Halcon logo (15 + 25 + 2 gap = 42)
+                        doc.addImage(logoEmpresa, 'PNG', 42, yPos, 25, 25);
                     } catch (e) {
                         console.warn('Could not add company logo to PDF:', e);
                     }
@@ -925,7 +926,7 @@
                 doc.text('BOGOTÁ, Colombia', pageWidth - 15, yPos, { align: 'right' });
                 yPos += 4;
                 doc.text('NIT: 901144615-6', pageWidth - 15, yPos, { align: 'right' });
-                
+
                 yPos = 40;
 
                 yPos += 10;
@@ -933,7 +934,7 @@
                 // Title
                 doc.setFontSize(16);
                 doc.setFont('helvetica', 'bold');
-                doc.text('REPORTE DE ENTREGAS', pageWidth / 2, yPos, { align: 'center' });
+                doc.text('Reporte de Entregas', pageWidth / 2, yPos, { align: 'center' });
                 yPos += 6;
 
                 // Month
@@ -990,6 +991,19 @@
 
                     yPos += 10;
                     doc.setTextColor(0, 0, 0);
+
+                    // Sort visits by date (oldest to newest)
+                    repartidor.visits.sort((a, b) => {
+                        // Function to parse dd/mm/yyyy to Date object
+                        const parseDate = (dateStr) => {
+                            const [day, month, year] = dateStr.split('/');
+                            return new Date(year, month - 1, day);
+                        };
+                        // Use raw timestamp if available, otherwise parse string
+                        const dateA = a.timestamp ? a.timestamp.toDate() : parseDate(a.fecha);
+                        const dateB = b.timestamp ? b.timestamp.toDate() : parseDate(b.fecha);
+                        return dateA - dateB;
+                    });
 
                     // Table data
                     const tableData = [];
