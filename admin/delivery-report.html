@@ -907,8 +907,8 @@
                 }
                 if (logoEmpresa) {
                     try {
-                        // Position next to Halcon logo (15 + 25 + 2 gap = 42)
-                        doc.addImage(logoEmpresa, 'PNG', 42, yPos, 25, 25);
+                        // Position next to Halcon logo with proper size to show full logo
+                        doc.addImage(logoEmpresa, 'PNG', 42, yPos, 50, 25);
                     } catch (e) {
                         console.warn('Could not add company logo to PDF:', e);
                     }
@@ -994,15 +994,8 @@
 
                     // Sort visits by date (oldest to newest)
                     repartidor.visits.sort((a, b) => {
-                        // Function to parse dd/mm/yyyy to Date object
-                        const parseDate = (dateStr) => {
-                            const [day, month, year] = dateStr.split('/');
-                            return new Date(year, month - 1, day);
-                        };
-                        // Use raw timestamp if available, otherwise parse string
-                        const dateA = a.timestamp ? a.timestamp.toDate() : parseDate(a.fecha);
-                        const dateB = b.timestamp ? b.timestamp.toDate() : parseDate(b.fecha);
-                        return dateA - dateB;
+                        // fecha is in format YYYY-MM-DD, can be compared directly as strings
+                        return a.fecha.localeCompare(b.fecha);
                     });
 
                     // Table data
