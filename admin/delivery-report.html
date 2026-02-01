@@ -908,7 +908,7 @@
                 if (logoEmpresa) {
                     try {
                         // Position next to Halcon logo with proper size to show full logo
-                        doc.addImage(logoEmpresa, 'PNG', 42, yPos, 50, 25);
+                        doc.addImage(logoEmpresa, 'PNG', 42, yPos, 35, 25);
                     } catch (e) {
                         console.warn('Could not add company logo to PDF:', e);
                     }
@@ -934,7 +934,7 @@
                 // Title
                 doc.setFontSize(16);
                 doc.setFont('helvetica', 'bold');
-                doc.text('Reporte de Entregas', pageWidth / 2, yPos, { align: 'center' });
+                doc.text('Reporte de Entregas Halcón', pageWidth / 2, yPos, { align: 'center' });
                 yPos += 6;
 
                 // Month
