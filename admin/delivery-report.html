@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Reporte de Entregas</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+            font-size: 1.75rem;
+        }
+
+        .subtitle {
+            color: #6b7280;
+        }
+
+        .filters-section {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 1rem;
+            align-items: end;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .filter-label {
+            font-weight: 600;
+            color: #374151;
+            font-size: 0.875rem;
+        }
+
+        .filter-select {
+            padding: 0.75rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            background: white;
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .summary-section {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .summary-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            color: white;
+        }
+
+        .summary-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .summary-label {
+            font-size: 0.875rem;
+            opacity: 0.9;
+        }
+
+        .results-section {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .repartidor-card {
+            border: 2px solid #e5e7eb;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            transition: all 0.2s;
+        }
+
+        .repartidor-card:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+        }
+
+        .repartidor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .repartidor-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .repartidor-stats {
+            display: flex;
+            gap: 2rem;
+            font-size: 0.875rem;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #3b82f6;
+        }
+
+        .stat-label {
+            color: #6b7280;
+            margin-top: 0.25rem;
+        }
+
+        .toggle-detail {
+            background: #f3f4f6;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            color: #374151;
+            transition: all 0.2s;
+        }
+
+        .toggle-detail:hover {
+            background: #e5e7eb;
+        }
+
+        .detail-section {
+            display: none;
+            margin-top: 1rem;
+        }
+
+        .detail-section.active {
+            display: block;
+        }
+
+        .date-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .date-header {
+            background: #f9fafb;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.75rem;
+        }
+
+        .visit-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            transition: all 0.2s;
+        }
+
+        .visit-card:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+        }
+
+        .visit-card.multiple {
+            border-left: 4px solid #f59e0b;
+            background: #fffbeb;
+        }
+
+        .visit-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 0.75rem;
+        }
+
+        .visit-badge {
+            background: #fef3c7;
+            color: #92400e;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .visit-info {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .info-row {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .info-label {
+            color: #6b7280;
+            font-weight: 600;
+        }
+
+        .info-value {
+            color: #1f2937;
+        }
+
+        .pedidos-list {
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid #e5e7eb;
+            font-size: 0.875rem;
+        }
+
+        .pedidos-label {
+            color: #6b7280;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .pedidos-numbers {
+            color: #3b82f6;
+            font-weight: 600;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #6b7280;
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #6b7280;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e5e7eb;
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .export-section {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Reporte de Entregas por Repartidor</h1>
+            <p class="subtitle">Cálculo de visitas pagables - Sistema de nómina</p>
+        </div>
+
+        <div class="filters-section">
+            <div class="filters-grid">
+                <div class="filter-group">
+                    <label class="filter-label">Mes:</label>
+                    <select id="selectMonth" class="filter-select">
+                        <option value="">-- Seleccionar Mes --</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Repartidor:</label>
+                    <select id="selectRepartidor" class="filter-select">
+                        <option value="all">Todos</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" id="btnGenerate">🔍 Generar Reporte</button>
+            </div>
+        </div>
+
+        <div id="summarySection" class="summary-section" style="display: none;">
+            <h2>📈 Resumen General</h2>
+            <div class="summary-grid" id="summaryGrid"></div>
+        </div>
+
+        <div class="results-section">
+            <div class="export-section" id="exportSection" style="display: none;">
+                <button class="btn btn-success" id="btnExport">📥 Exportar a Excel</button>
+            </div>
+
+            <div id="loadingState" class="loading" style="display: none;">
+                <div class="spinner"></div>
+                <p>Generando reporte...</p>
+            </div>
+
+            <div id="emptyState" class="empty-state">
+                <div class="empty-state-icon">📦</div>
+                <p>Selecciona un mes y genera el reporte</p>
+            </div>
+
+            <div id="resultsContainer" style="display: none;"></div>
+        </div>
+    </div>
+
+    <!-- SheetJS library for Excel export -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import {
+            getFirestore,
+            collection,
+            getDocs,
+            query,
+            where,
+            orderBy
+        } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD9sKuqivGZryt7Ol33WtUpsM5Q0eARNR4",
+            authDomain: "flex-tracker-ce54b.firebaseapp.com",
+            projectId: "flex-tracker-ce54b",
+            storageBucket: "flex-tracker-ce54b.firebasestorage.app",
+            messagingSenderId: "617822125610",
+            appId: "1:617822125610:web:ce2265cef161b7c7e10d53"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let reportData = null;
+
+        // DOM elements
+        const selectMonth = document.getElementById('selectMonth');
+        const selectRepartidor = document.getElementById('selectRepartidor');
+        const btnGenerate = document.getElementById('btnGenerate');
+        const btnExport = document.getElementById('btnExport');
+        const summarySection = document.getElementById('summarySection');
+        const summaryGrid = document.getElementById('summaryGrid');
+        const loadingState = document.getElementById('loadingState');
+        const emptyState = document.getElementById('emptyState');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const exportSection = document.getElementById('exportSection');
+
+        // Initialize month selector
+        function initializeMonthSelector() {
+            const months = [
+                'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+            ];
+
+            const currentDate = new Date();
+            const currentYear = currentDate.getFullYear();
+            const currentMonth = currentDate.getMonth();
+
+            // Generate last 12 months
+            for (let i = 0; i < 12; i++) {
+                let month = currentMonth - i;
+                let year = currentYear;
+
+                if (month < 0) {
+                    month += 12;
+                    year -= 1;
+                }
+
+                const option = document.createElement('option');
+                option.value = `${year}-${String(month + 1).padStart(2, '0')}`;
+                option.textContent = `${months[month]} ${year}`;
+                selectMonth.appendChild(option);
+            }
+        }
+
+        // Load repartidores
+        async function loadRepartidores() {
+            try {
+                const flexSnapshot = await getDocs(collection(db, 'pedidos_flex'));
+                const wixSnapshot = await getDocs(collection(db, 'pedidos_wix'));
+
+                const repartidores = new Set();
+
+                [...flexSnapshot.docs, ...wixSnapshot.docs].forEach(doc => {
+                    const data = doc.data();
+                    if (data.repartidor_nombre) {
+                        repartidores.add(JSON.stringify({
+                            id: data.repartidor_id,
+                            nombre: data.repartidor_nombre
+                        }));
+                    }
+                });
+
+                const uniqueRepartidores = Array.from(repartidores).map(r => JSON.parse(r));
+
+                uniqueRepartidores.forEach(rep => {
+                    const option = document.createElement('option');
+                    option.value = rep.id;
+                    option.textContent = rep.nombre;
+                    selectRepartidor.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading repartidores:', error);
+            }
+        }
+
+        // Generate report
+        async function generateReport() {
+            const selectedMonth = selectMonth.value;
+            const selectedRepartidor = selectRepartidor.value;
+
+            if (!selectedMonth) {
+                alert('Por favor selecciona un mes');
+                return;
+            }
+
+            loadingState.style.display = 'block';
+            emptyState.style.display = 'none';
+            resultsContainer.style.display = 'none';
+            summarySection.style.display = 'none';
+            exportSection.style.display = 'none';
+
+            try {
+                // Calculate date range
+                const [year, month] = selectedMonth.split('-');
+                const startDate = new Date(year, month - 1, 1);
+                const endDate = new Date(year, month, 0, 23, 59, 59);
+
+                // Load pedidos from both collections
+                const flexSnapshot = await getDocs(collection(db, 'pedidos_flex'));
+                const wixSnapshot = await getDocs(collection(db, 'pedidos_wix'));
+
+                const allPedidos = [
+                    ...flexSnapshot.docs.map(doc => ({ id: doc.id, origen: 'flex', ...doc.data() })),
+                    ...wixSnapshot.docs.map(doc => ({ id: doc.id, origen: 'wix', ...doc.data() }))
+                ];
+
+                // Filter pedidos
+                const filteredPedidos = allPedidos.filter(pedido => {
+                    // Must be delivered
+                    if (pedido.estado !== 'entregado') return false;
+
+                    // Must have repartidor
+                    if (!pedido.repartidor_id) return false;
+
+                    // Filter by repartidor if selected
+                    if (selectedRepartidor !== 'all' && pedido.repartidor_id !== selectedRepartidor) {
+                        return false;
+                    }
+
+                    // Filter by date
+                    const pedidoDate = parseDateValue(pedido.fecha_creacion);
+                    if (!pedidoDate) return false;
+
+                    return pedidoDate >= startDate && pedidoDate <= endDate;
+                });
+
+                // Group visits
+                const visits = groupVisits(filteredPedidos);
+
+                // Generate report data
+                reportData = generateReportData(visits);
+
+                // Render results
+                renderSummary(reportData);
+                renderResults(reportData);
+
+                loadingState.style.display = 'none';
+                summarySection.style.display = 'block';
+                resultsContainer.style.display = 'block';
+                exportSection.style.display = 'block';
+
+            } catch (error) {
+                console.error('Error generating report:', error);
+                alert('Error al generar reporte: ' + error.message);
+                loadingState.style.display = 'none';
+                emptyState.style.display = 'block';
+            }
+        }
+
+        // Parse date value (handles Timestamp, string, Date)
+        function parseDateValue(dateValue) {
+            if (!dateValue) return null;
+
+            try {
+                if (dateValue && typeof dateValue === 'object' && dateValue.toDate) {
+                    return dateValue.toDate();
+                } else if (typeof dateValue === 'string') {
+                    return new Date(dateValue);
+                } else if (dateValue instanceof Date) {
+                    return dateValue;
+                } else if (typeof dateValue === 'number') {
+                    return new Date(dateValue);
+                }
+            } catch (error) {
+                console.error('Error parsing date:', error);
+            }
+            return null;
+        }
+
+        // Format date to YYYY-MM-DD
+        function formatDateOnly(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        // Format date for display
+        function formatDateDisplay(dateString) {
+            const [year, month, day] = dateString.split('-');
+            return `${day}/${month}/${year}`;
+        }
+
+        // Group visits by unique key
+        function groupVisits(pedidos) {
+            const visitsMap = new Map();
+
+            pedidos.forEach(pedido => {
+                const date = parseDateValue(pedido.fecha_creacion);
+                if (!date) return;
+
+                const dateOnly = formatDateOnly(date);
+
+                // Create unique key for grouping
+                const key = `${pedido.repartidor_id}|${dateOnly}|${pedido.direccion}|${pedido.destinatario}`;
+
+                if (!visitsMap.has(key)) {
+                    visitsMap.set(key, {
+                        repartidor_id: pedido.repartidor_id,
+                        repartidor_nombre: pedido.repartidor_nombre,
+                        fecha: dateOnly,
+                        direccion: pedido.direccion,
+                        destinatario: pedido.destinatario,
+                        distrito: pedido.distrito,
+                        pedidos: []
+                    });
+                }
+
+                visitsMap.get(key).pedidos.push({
+                    serial: pedido.numero_serial,
+                    numero_envio: pedido.numero_envio,
+                    origen: pedido.origen
+                });
+            });
+
+            return Array.from(visitsMap.values());
+        }
+
+        // Generate report data structure
+        function generateReportData(visits) {
+            const repartidoresMap = new Map();
+
+            visits.forEach(visit => {
+                if (!repartidoresMap.has(visit.repartidor_id)) {
+                    repartidoresMap.set(visit.repartidor_id, {
+                        id: visit.repartidor_id,
+                        nombre: visit.repartidor_nombre,
+                        visits: [],
+                        totalVisits: 0,
+                        totalPedidos: 0,
+                        multipleVisits: 0
+                    });
+                }
+
+                const rep = repartidoresMap.get(visit.repartidor_id);
+                rep.visits.push(visit);
+                rep.totalVisits++;
+                rep.totalPedidos += visit.pedidos.length;
+                if (visit.pedidos.length > 1) {
+                    rep.multipleVisits++;
+                }
+            });
+
+            return Array.from(repartidoresMap.values());
+        }
+
+        // Render summary
+        function renderSummary(data) {
+            const totalRepartidores = data.length;
+            const totalVisits = data.reduce((sum, r) => sum + r.totalVisits, 0);
+            const totalPedidos = data.reduce((sum, r) => sum + r.totalPedidos, 0);
+            const totalMultiple = data.reduce((sum, r) => sum + r.multipleVisits, 0);
+
+            summaryGrid.innerHTML = `
+                <div class="summary-card">
+                    <div class="summary-value">${totalRepartidores}</div>
+                    <div class="summary-label">Repartidores</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-value">${totalVisits}</div>
+                    <div class="summary-label">Visitas Pagables</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-value">${totalPedidos}</div>
+                    <div class="summary-label">Pedidos Entregados</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-value">${totalMultiple}</div>
+                    <div class="summary-label">Visitas Múltiples</div>
+                </div>
+            `;
+        }
+
+        // Render results
+        function renderResults(data) {
+            resultsContainer.innerHTML = data.map(repartidor => {
+                const detailId = `detail-${repartidor.id}`;
+
+                // Group visits by date
+                const visitsByDate = new Map();
+                repartidor.visits.forEach(visit => {
+                    if (!visitsByDate.has(visit.fecha)) {
+                        visitsByDate.set(visit.fecha, []);
+                    }
+                    visitsByDate.get(visit.fecha).push(visit);
+                });
+
+                const sortedDates = Array.from(visitsByDate.keys()).sort().reverse();
+
+                return `
+                    <div class="repartidor-card">
+                        <div class="repartidor-header">
+                            <div>
+                                <div class="repartidor-name">👤 ${repartidor.nombre}</div>
+                            </div>
+                            <div class="repartidor-stats">
+                                <div class="stat-item">
+                                    <div class="stat-value">${repartidor.totalVisits}</div>
+                                    <div class="stat-label">Visitas</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">${repartidor.totalPedidos}</div>
+                                    <div class="stat-label">Pedidos</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">${repartidor.multipleVisits}</div>
+                                    <div class="stat-label">Múltiples</div>
+                                </div>
+                            </div>
+                            <button class="toggle-detail" onclick="toggleDetail('${detailId}')">
+                                ▼ Ver Detalle
+                            </button>
+                        </div>
+
+                        <div id="${detailId}" class="detail-section">
+                            ${sortedDates.map(fecha => `
+                                <div class="date-group">
+                                    <div class="date-header">📅 ${formatDateDisplay(fecha)}</div>
+                                    ${visitsByDate.get(fecha).map((visit, idx) => `
+                                        <div class="visit-card ${visit.pedidos.length > 1 ? 'multiple' : ''}">
+                                            <div class="visit-header">
+                                                <div>
+                                                    <strong>Visita #${idx + 1}</strong>
+                                                    ${visit.pedidos.length > 1 ? `<span class="visit-badge">⚠️ ${visit.pedidos.length} PEDIDOS</span>` : ''}
+                                                </div>
+                                            </div>
+                                            <div class="visit-info">
+                                                <div class="info-row">
+                                                    <span class="info-label">Cliente:</span>
+                                                    <span class="info-value">${visit.destinatario}</span>
+                                                </div>
+                                                <div class="info-row">
+                                                    <span class="info-label">Distrito:</span>
+                                                    <span class="info-value">${visit.distrito || '-'}</span>
+                                                </div>
+                                                <div class="info-row" style="grid-column: 1 / -1;">
+                                                    <span class="info-label">Dirección:</span>
+                                                    <span class="info-value">${visit.direccion}</span>
+                                                </div>
+                                            </div>
+                                            <div class="pedidos-list">
+                                                <div class="pedidos-label">Pedidos incluidos:</div>
+                                                <div class="pedidos-numbers">
+                                                    ${visit.pedidos.map(p => `#${p.serial} ${p.origen === 'wix' ? '🛒' : '📦'}`).join(', ')}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Toggle detail visibility
+        window.toggleDetail = function (detailId) {
+            const detail = document.getElementById(detailId);
+            detail.classList.toggle('active');
+        };
+
+        // Export to Excel
+        function exportToExcel() {
+            if (!reportData) return;
+
+            const wb = XLSX.utils.book_new();
+
+            // Sheet 1: Detailed visits
+            const detailData = [];
+            detailData.push(['Repartidor', 'Fecha', 'Cliente', 'Dirección', 'Distrito', 'Pedidos', 'Cant. Pedidos', 'Visitas Pagables']);
+
+            reportData.forEach(repartidor => {
+                repartidor.visits.forEach(visit => {
+                    detailData.push([
+                        repartidor.nombre,
+                        formatDateDisplay(visit.fecha),
+                        visit.destinatario,
+                        visit.direccion,
+                        visit.distrito || '',
+                        visit.pedidos.map(p => `#${p.serial}`).join(', '),
+                        visit.pedidos.length,
+                        1
+                    ]);
+                });
+            });
+
+            const ws1 = XLSX.utils.aoa_to_sheet(detailData);
+            XLSX.utils.book_append_sheet(wb, ws1, 'Detalle de Visitas');
+
+            // Sheet 2: Summary by repartidor
+            const summaryData = [];
+            summaryData.push(['Repartidor', 'Total Visitas', 'Total Pedidos', 'Visitas Múltiples']);
+
+            reportData.forEach(repartidor => {
+                summaryData.push([
+                    repartidor.nombre,
+                    repartidor.totalVisits,
+                    repartidor.totalPedidos,
+                    repartidor.multipleVisits
+                ]);
+            });
+
+            const ws2 = XLSX.utils.aoa_to_sheet(summaryData);
+            XLSX.utils.book_append_sheet(wb, ws2, 'Resumen por Repartidor');
+
+            // Generate filename
+            const monthName = selectMonth.options[selectMonth.selectedIndex].text;
+            const filename = `Reporte_Entregas_${monthName.replace(' ', '_')}.xlsx`;
+
+            // Download
+            XLSX.writeFile(wb, filename);
+        }
+
+        // Event listeners
+        btnGenerate.addEventListener('click', generateReport);
+        btnExport.addEventListener('click', exportToExcel);
+
+        // Initialize
+        initializeMonthSelector();
+        loadRepartidores();
+    </script>
+</body>
+
+</html>
