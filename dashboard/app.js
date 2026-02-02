@@ -1158,6 +1158,7 @@ function renderOrders() {
                         <td>${order.celular || '-'}</td>
                         <td>${order.direccion}</td>
                         <td class="contraentrega-cell">
+                            ${order.origen === 'tienda' ? '-' : `
                             <div class="contraentrega-controls">
                                 <label class="checkbox-label">
                                     <input type="checkbox" 
@@ -1180,6 +1181,7 @@ function renderOrders() {
                                     💾
                                 </button>
                             </div>
+                            `}
                         </td>
                         <td>${getStatusBadge(order.estado)}</td>
                         <td>${order.repartidor_nombre || '-'}</td>
