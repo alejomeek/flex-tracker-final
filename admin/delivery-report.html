@@ -1065,13 +1065,25 @@
                         },
                         margin: { left: 15, right: 15 },
                         didDrawCell: (data) => {
-                            // Highlight multiple orders
+                            // Highlight multiple orders (Cant column)
                             if (data.column.index === 5 && data.cell.section === 'body') {
                                 const count = parseInt(data.cell.raw);
                                 if (count > 1) {
-                                    doc.setFillColor(254, 243, 199);
+                                    doc.setFillColor(254, 243, 199); // Yellow
                                     doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
                                     doc.setTextColor(146, 64, 14);
+                                    doc.setFont('helvetica', 'bold');
+                                    doc.text(data.cell.raw, data.cell.x + 2, data.cell.y + 4);
+                                    doc.setTextColor(0, 0, 0);
+                                    doc.setFont('helvetica', 'normal');
+                                }
+                            }
+                            // Highlight COD payments (Contra column)
+                            if (data.column.index === 7 && data.cell.section === 'body') {
+                                if (data.cell.raw !== 'No aplica') {
+                                    doc.setFillColor(254, 226, 226); // Light red
+                                    doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
+                                    doc.setTextColor(185, 28, 28);
                                     doc.setFont('helvetica', 'bold');
                                     doc.text(data.cell.raw, data.cell.x + 2, data.cell.y + 4);
                                     doc.setTextColor(0, 0, 0);
