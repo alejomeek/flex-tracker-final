@@ -303,7 +303,7 @@ function closeCreateStoreModal() {
 async function getNextStoreShippingNumber() {
     try {
         // Get the counter from Firestore
-        const counterRef = doc(db, 'counters', 'store_shipping');
+        const counterRef = doc(db, 'contadores', 'tienda_shipping');
         const counterSnap = await getDoc(counterRef);
 
         let nextNumber = 1001; // Start at VT-1001
@@ -365,10 +365,10 @@ async function handleCreateStoreSubmit(e) {
         };
 
         // Save to Firestore
-        await addDoc(collection(db, 'pedidos'), newOrder);
+        await addDoc(collection(db, 'pedidos_tienda'), newOrder);
 
         // Update counter
-        const counterRef = doc(db, 'counters', 'store_shipping');
+        const counterRef = doc(db, 'contadores', 'tienda_shipping');
         await setDoc(counterRef, { current: numberPart }, { merge: true });
 
         showNotification('✅ Pedido creado exitosamente', 'success');
@@ -963,10 +963,11 @@ async function importarPedidosWix(pedidosSeleccionados) {
     return importados;
 }
 
-// Listen to real-time updates from BOTH Firestore collections
+// Listen to real-time updates from ALL THREE Firestore collections
 function listenToOrders() {
     let flexOrders = [];
     let wixOrders = [];
+    let tiendaOrders = [];
 
     // Listen to pedidos_flex
     const qFlex = query(collection(db, 'pedidos_flex'), orderBy('numero_serial', 'desc'));
@@ -994,10 +995,23 @@ function listenToOrders() {
         console.error('Error listening to pedidos_wix:', error);
     });
 
-    // Combine orders from both collections
+    // Listen to pedidos_tienda
+    const qTienda = query(collection(db, 'pedidos_tienda'), orderBy('numero_serial', 'desc'));
+    onSnapshot(qTienda, (snapshot) => {
+        tiendaOrders = snapshot.docs.map(doc => ({
+            id: doc.id,
+            coleccion: 'pedidos_tienda',
+            ...doc.data()
+        }));
+        combineAndRenderOrders();
+    }, (error) => {
+        console.error('Error listening to pedidos_tienda:', error);
+    });
+
+    // Combine orders from all three collections
     function combineAndRenderOrders() {
         // Combine and sort by numero_serial descending
-        allOrders = [...flexOrders, ...wixOrders].sort((a, b) => b.numero_serial - a.numero_serial);
+        allOrders = [...flexOrders, ...wixOrders, ...tiendaOrders].sort((a, b) => b.numero_serial - a.numero_serial);
 
         updateStatistics();
         renderOrders();
