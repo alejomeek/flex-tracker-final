@@ -164,13 +164,36 @@ function listenToStats() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const q = query(collection(db, 'pedidos_flex'));
+    let flexOrders = [];
+    let wixOrders = [];
+    let tiendaOrders = [];
 
-    onSnapshot(q, (snapshot) => {
-        const orders = snapshot.docs.map(doc => doc.data());
+    // Listen to pedidos_flex
+    const qFlex = query(collection(db, 'pedidos_flex'));
+    onSnapshot(qFlex, (snapshot) => {
+        flexOrders = snapshot.docs.map(doc => doc.data());
+        updateStats();
+    });
 
-        const pending = orders.filter(o => o.estado === 'pendiente').length;
-        const deliveredToday = orders.filter(o => {
+    // Listen to pedidos_wix
+    const qWix = query(collection(db, 'pedidos_wix'));
+    onSnapshot(qWix, (snapshot) => {
+        wixOrders = snapshot.docs.map(doc => doc.data());
+        updateStats();
+    });
+
+    // Listen to pedidos_tienda
+    const qTienda = query(collection(db, 'pedidos_tienda'));
+    onSnapshot(qTienda, (snapshot) => {
+        tiendaOrders = snapshot.docs.map(doc => doc.data());
+        updateStats();
+    });
+
+    function updateStats() {
+        const allOrders = [...flexOrders, ...wixOrders, ...tiendaOrders];
+
+        const pending = allOrders.filter(o => o.estado === 'pendiente').length;
+        const deliveredToday = allOrders.filter(o => {
             if (o.estado === 'entregado' && o.fecha_entrega) {
                 const deliveryDate = o.fecha_entrega.toDate();
                 return deliveryDate >= today;
@@ -180,7 +203,7 @@ function listenToStats() {
 
         statPendingToday.textContent = pending;
         statDeliveredToday.textContent = deliveredToday;
-    });
+    }
 }
 
 // Show screen
@@ -422,7 +445,42 @@ async function searchPedido(scannedText) {
             return;
         }
 
-        // Not found in either collection
+        // If not found in Wix, try pedidos_tienda by numero_envio
+        const qTienda = query(
+            collection(db, 'pedidos_tienda'),
+            where('numero_envio', '==', numeroEnvio)
+        );
+
+        const tiendaSnapshot = await getDocs(qTienda);
+
+        if (!tiendaSnapshot.empty) {
+            // Found in pedidos_tienda
+            const pedidoDoc = tiendaSnapshot.docs[0];
+            currentPedido = {
+                id: pedidoDoc.id,
+                coleccion: 'pedidos_tienda',
+                ...pedidoDoc.data()
+            };
+
+            console.log('Pedido Tienda encontrado:', currentPedido);
+
+            // Check if already delivered
+            if (currentPedido.estado === 'entregado') {
+                showNotification('Este pedido ya fue entregado', 'warning');
+                return;
+            }
+
+            if (currentPedido.estado === 'no_entregado') {
+                showNotification('Este pedido fue marcado como no entregado', 'warning');
+                return;
+            }
+
+            showPedidoDetails();
+            showScreen('pedido');
+            return;
+        }
+
+        // Not found in any collection
         showNotification(`Pedido no encontrado: ${numeroEnvio}`, 'error');
         console.log('No se encontró pedido con número:', numeroEnvio);
 
