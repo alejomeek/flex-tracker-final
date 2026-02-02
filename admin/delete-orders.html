@@ -574,7 +574,7 @@
                     <div class="pedido-info">
                         <div class="info-item">
                             <span class="info-label">Origen:</span>
-                            <span class="info-value">${pedido.origen === 'wix' ? 'Wix' : 'Flex'}</span>
+                            <span class="info-value">${pedido.origen === 'wix' ? '🛒 Wix' : pedido.origen === 'tienda' ? '🏪 Tienda' : '📦 Flex'}</span>
                         </div>
                         <div class="info-item">
                             <span class="info-label">N° Envío:</span>
