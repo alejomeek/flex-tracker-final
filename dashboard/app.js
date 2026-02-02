@@ -526,8 +526,9 @@ async function generarEtiquetaWixPDF(pedido) {
         doc.text(`Ciudad: ${pedido.ciudad || 'N/A'}`, 0.5, y);
         y += 0.5;
 
-        // Order number
-        doc.text(`Pedido: #${pedido.numero_pedido_wix}`, 0.5, y);
+        // Order number (use numero_envio for tienda, numero_pedido_wix for wix)
+        const orderNumber = pedido.origen === 'tienda' ? pedido.numero_envio : pedido.numero_pedido_wix;
+        doc.text(`Pedido: ${orderNumber}`, 0.5, y);
         y += 0.6;
 
         // Observations if any
@@ -544,8 +545,11 @@ async function generarEtiquetaWixPDF(pedido) {
         qrContainer.style.display = 'none';
         document.body.appendChild(qrContainer);
 
+        // Generate QR Code (use numero_envio for tienda, numero_pedido_wix for wix)
+        const qrText = pedido.origen === 'tienda' ? pedido.numero_envio : pedido.numero_pedido_wix.toString();
+
         const qr = new QRCode(qrContainer, {
-            text: pedido.numero_pedido_wix.toString(),
+            text: qrText,
             width: 200,
             height: 200,
             colorDark: "#000000",
@@ -569,7 +573,7 @@ async function generarEtiquetaWixPDF(pedido) {
             // Add pedido number below QR
             doc.setFontSize(10);
             doc.setFont("helvetica", "bold");
-            const pedidoText = `#${pedido.numero_pedido_wix}`;
+            const pedidoText = pedido.origen === 'tienda' ? pedido.numero_envio : `#${pedido.numero_pedido_wix}`;
             const textWidth = doc.getTextWidth(pedidoText);
             doc.text(pedidoText, qrX + (qrSize - textWidth) / 2, qrY + qrSize + 0.4);
         }
@@ -578,7 +582,8 @@ async function generarEtiquetaWixPDF(pedido) {
         document.body.removeChild(qrContainer);
 
         // Download PDF using jsPDF's save method (forces download)
-        const fileName = `WIX_${pedido.numero_pedido_wix}_${pedido.numero_serial}.pdf`;
+        const orderRef = pedido.origen === 'tienda' ? pedido.numero_envio : pedido.numero_pedido_wix;
+        const fileName = `${pedido.origen === 'tienda' ? 'TIENDA' : 'WIX'}_${orderRef}_${pedido.numero_serial}.pdf`;
         doc.save(fileName);
 
         showNotification('✅ Etiqueta PDF generada', 'success');
