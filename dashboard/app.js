@@ -1077,8 +1077,8 @@ function renderOrders() {
 
     // Update table header based on filter
     const ordersTableHead = document.getElementById('ordersTableHead');
-    if (showingOnlyWix || showingOnlyTienda) {
-        // Wix/Tienda columns: Serial | Origen | N° Envío | Destinatario | Celular | Dirección | Contraentrega | Estado | Repartidor | Fecha Entrega | Recibido por | Acciones
+    if (showingOnlyWix) {
+        // Wix columns: Serial | Origen | N° Envío | Destinatario | Celular | Dirección | Contraentrega | Estado | Repartidor | Fecha Entrega | Recibido por | Acciones
         ordersTableHead.innerHTML = `
             <tr>
                 <th>Serial</th>
@@ -1088,6 +1088,23 @@ function renderOrders() {
                 <th>Celular</th>
                 <th>Dirección</th>
                 <th>Contraentrega</th>
+                <th>Estado</th>
+                <th>Repartidor</th>
+                <th>Fecha Entrega</th>
+                <th>Recibido por</th>
+                <th>Acciones</th>
+            </tr>
+        `;
+    } else if (showingOnlyTienda) {
+        // Tienda columns (NO Contraentrega): Serial | Origen | N° Envío | Destinatario | Celular | Dirección | Estado | Repartidor | Fecha Entrega | Recibido por | Acciones
+        ordersTableHead.innerHTML = `
+            <tr>
+                <th>Serial</th>
+                <th>Origen</th>
+                <th>N° Envío</th>
+                <th>Destinatario</th>
+                <th>Celular</th>
+                <th>Dirección</th>
                 <th>Estado</th>
                 <th>Repartidor</th>
                 <th>Fecha Entrega</th>
@@ -1148,57 +1165,84 @@ function renderOrders() {
             const isTienda = order.origen === 'tienda';
 
             if (showingOnlyWix || showingOnlyTienda || isWix || isTienda) {
-                // Wix/Tienda row format (both use same format)
-                return `
-                    <tr>
-                        <td><strong>#${order.numero_serial}</strong></td>
-                        <td>${getOrigenBadge(order.origen)}</td>
-                        <td>${order.numero_envio}</td>
-                        <td>${order.destinatario}</td>
-                        <td>${order.celular || '-'}</td>
-                        <td>${order.direccion}</td>
-                        <td class="contraentrega-cell">
-                            ${order.origen === 'tienda' ? '-' : `
-                            <div class="contraentrega-controls">
-                                <label class="checkbox-label">
-                                    <input type="checkbox" 
-                                           class="cod-checkbox" 
-                                           data-order-id="${order.id}"
-                                           ${order.pago_contraentrega ? 'checked disabled' : ''}
-                                           onchange="toggleCOD('${order.id}', this.checked)">
-                                </label>
-                                <input type="number" 
-                                       class="cod-amount-input ${order.pago_contraentrega ? '' : 'hidden'}" 
-                                       id="cod-amount-${order.id}"
-                                       value="${order.monto_cobrar > 0 ? order.monto_cobrar : ''}"
-                                       placeholder="Monto"
-                                       min="0"
-                                       step="1000"
-                                       ${order.pago_contraentrega && order.monto_cobrar > 0 ? 'disabled' : ''}>
-                                <button class="btn-save-cod ${order.pago_contraentrega && order.monto_cobrar > 0 ? 'hidden' : (order.pago_contraentrega ? '' : 'hidden')}" 
-                                        id="btn-save-${order.id}"
-                                        onclick="saveCOD('${order.id}')">
-                                    💾
-                                </button>
-                            </div>
-                            `}
-                        </td>
-                        <td>${getStatusBadge(order.estado)}</td>
-                        <td>${order.repartidor_nombre || '-'}</td>
-                        <td>${formatDate(order.fecha_entrega)}</td>
-                        <td>${order.recibido_por || '-'}</td>
-                        <td>
-                            ${order.imagen_evidencia_url
-                        ? `<button class="btn-view-image" onclick="viewImage('${order.id}', '${order.coleccion}')">Ver Foto</button>`
-                        : ''
-                    }
-                            ${(order.estado === 'pendiente')
-                        ? `<button class="btn-generate-label" onclick="generarEtiquetaWix('${order.id}')">🏷️ Generar Etiqueta</button>`
-                        : ''
-                    }
-                        </td>
-                    </tr>
-                `;
+                // Check if it's a Tienda order
+                if (isTienda) {
+                    // Tienda row format (NO Contraentrega column)
+                    return `
+                        <tr>
+                            <td><strong>#${order.numero_serial}</strong></td>
+                            <td>${getOrigenBadge(order.origen)}</td>
+                            <td>${order.numero_envio}</td>
+                            <td>${order.destinatario}</td>
+                            <td>${order.celular || '-'}</td>
+                            <td>${order.direccion}</td>
+                            <td>${getStatusBadge(order.estado)}</td>
+                            <td>${order.repartidor_nombre || '-'}</td>
+                            <td>${formatDate(order.fecha_entrega)}</td>
+                            <td>${order.recibido_por || '-'}</td>
+                            <td>
+                                ${order.imagen_evidencia_url
+                            ? `<button class="btn-view-image" onclick="viewImage('${order.id}', '${order.coleccion}')">Ver Foto</button>`
+                            : ''
+                        }
+                                ${(order.estado === 'pendiente')
+                            ? `<button class="btn-generate-label" onclick="generarEtiquetaWix('${order.id}')">🏷️ Generar Etiqueta</button>`
+                            : ''
+                        }
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    // Wix row format (WITH Contraentrega column)
+                    return `
+                        <tr>
+                            <td><strong>#${order.numero_serial}</strong></td>
+                            <td>${getOrigenBadge(order.origen)}</td>
+                            <td>${order.numero_envio}</td>
+                            <td>${order.destinatario}</td>
+                            <td>${order.celular || '-'}</td>
+                            <td>${order.direccion}</td>
+                            <td class="contraentrega-cell">
+                                <div class="contraentrega-controls">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" 
+                                               class="cod-checkbox" 
+                                               data-order-id="${order.id}"
+                                               ${order.pago_contraentrega ? 'checked disabled' : ''}
+                                               onchange="toggleCOD('${order.id}', this.checked)">
+                                    </label>
+                                    <input type="number" 
+                                           class="cod-amount-input ${order.pago_contraentrega ? '' : 'hidden'}" 
+                                           id="cod-amount-${order.id}"
+                                           value="${order.monto_cobrar > 0 ? order.monto_cobrar : ''}"
+                                           placeholder="Monto"
+                                           min="0"
+                                           step="1000"
+                                           ${order.pago_contraentrega && order.monto_cobrar > 0 ? 'disabled' : ''}>
+                                    <button class="btn-save-cod ${order.pago_contraentrega && order.monto_cobrar > 0 ? 'hidden' : (order.pago_contraentrega ? '' : 'hidden')}" 
+                                            id="btn-save-${order.id}"
+                                            onclick="saveCOD('${order.id}')">
+                                        💾
+                                    </button>
+                                </div>
+                            </td>
+                            <td>${getStatusBadge(order.estado)}</td>
+                            <td>${order.repartidor_nombre || '-'}</td>
+                            <td>${formatDate(order.fecha_entrega)}</td>
+                            <td>${order.recibido_por || '-'}</td>
+                            <td>
+                                ${order.imagen_evidencia_url
+                            ? `<button class="btn-view-image" onclick="viewImage('${order.id}', '${order.coleccion}')">Ver Foto</button>`
+                            : ''
+                        }
+                                ${(order.estado === 'pendiente')
+                            ? `<button class="btn-generate-label" onclick="generarEtiquetaWix('${order.id}')">🏷️ Generar Etiqueta</button>`
+                            : ''
+                        }
+                            </td>
+                        </tr>
+                    `;
+                }
             } else {
                 // Flex row format
                 return `
