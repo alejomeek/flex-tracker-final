@@ -493,12 +493,24 @@
                     ...doc.data()
                 }));
 
+                // Load from pedidos_tienda
+                const qTienda = query(collection(db, 'pedidos_tienda'), orderBy('numero_serial', 'desc'));
+                const tiendaSnapshot = await getDocs(qTienda);
+                console.log('Tienda loaded:', tiendaSnapshot.size);
+
+                const tiendaPedidos = tiendaSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    coleccion: 'pedidos_tienda',
+                    origen: 'tienda',
+                    ...doc.data()
+                }));
+
                 // Combine and sort
-                allPedidos = [...flexPedidos, ...wixPedidos].sort((a, b) => b.numero_serial - a.numero_serial);
+                allPedidos = [...flexPedidos, ...wixPedidos, ...tiendaPedidos].sort((a, b) => b.numero_serial - a.numero_serial);
 
                 loadingState.style.display = 'none';
                 emptyState.style.display = 'block';
-                resultsCount.textContent = `${allPedidos.length} pedidos en total (${flexPedidos.length} Flex + ${wixPedidos.length} Wix)`;
+                resultsCount.textContent = `${allPedidos.length} pedidos en total (${flexPedidos.length} Flex + ${wixPedidos.length} Wix + ${tiendaPedidos.length} Tienda)`;
             } catch (error) {
                 console.error('Error loading pedidos:', error);
                 alert('Error al cargar pedidos: ' + error.message);
