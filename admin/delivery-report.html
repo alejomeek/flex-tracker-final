@@ -699,7 +699,9 @@
                         visits: [],
                         totalVisits: 0,
                         totalPedidos: 0,
-                        multipleVisits: 0
+                        multipleVisits: 0,
+                        codCount: 0,
+                        codAmount: 0
                     });
                 }
 
@@ -863,7 +865,7 @@
                         visit.distrito || '',
                         visit.pedidos.map(p => `#${p.serial}`).join(', '),
                         visit.pedidos.length,
-                        visit.pedidos.map(p => p.origen === 'wix' ? 'Wix' : p.origen === 'tienda' ? 'Tienda' : 'Flex').join(', '),
+                        [...new Set(visit.pedidos.map(p => p.origen === 'wix' ? 'Wix' : p.origen === 'tienda' ? 'Tienda' : 'Flex'))].join(', '),
                         codAmount > 0 ? codAmount : 'No aplica',
                         1
                     ]);
@@ -1031,7 +1033,7 @@
                             visit.distrito || '-',
                             visit.pedidos.map(p => `#${p.serial}`).join(', '),
                             visit.pedidos.length.toString(),
-                            visit.pedidos.map(p => p.origen === 'wix' ? 'Wix' : p.origen === 'tienda' ? 'Tienda' : 'Flex').join(', '),
+                            [...new Set(visit.pedidos.map(p => p.origen === 'wix' ? 'Wix' : p.origen === 'tienda' ? 'Tienda' : 'Flex'))].join(', '),
                             codAmount > 0 ? codAmount.toLocaleString() : 'No aplica',
                             '1'
                         ]);
@@ -1039,7 +1041,7 @@
 
                     doc.autoTable({
                         startY: yPos,
-                        head: [['Fecha', 'Cliente', 'Dirección', 'Distrito', 'Pedidos', 'Cant.', 'Origen', 'COD', 'Visitas']],
+                        head: [['Fecha', 'Cliente', 'Dirección', 'Distrito', 'Pedidos', 'Cant', 'Origen', 'Contra', 'Visitas']],
                         body: tableData,
                         theme: 'grid',
                         headStyles: {
