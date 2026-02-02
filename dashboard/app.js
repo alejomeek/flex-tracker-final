@@ -8,7 +8,9 @@ import {
     query,
     orderBy,
     Timestamp,
+    serverTimestamp,
     doc,
+    getDoc,
     runTransaction,
     setDoc,
     updateDoc
@@ -259,6 +261,131 @@ async function confirmarImportacion() {
     }
 }
 
+// ============================================
+// STORE SALES MODAL
+// ============================================
+
+// Store Sales Modal Elements
+const btnCreateStore = document.getElementById('btnCreateStore');
+const modalCreateStore = document.getElementById('modalCreateStore');
+const btnCloseStoreModal = document.getElementById('btnCloseStoreModal');
+const btnCancelStore = document.getElementById('btnCancelStore');
+const formCreateStore = document.getElementById('formCreateStore');
+
+// Store Sales Modal Event Listeners
+btnCreateStore.addEventListener('click', openCreateStoreModal);
+btnCloseStoreModal.addEventListener('click', closeCreateStoreModal);
+btnCancelStore.addEventListener('click', closeCreateStoreModal);
+formCreateStore.addEventListener('submit', handleCreateStoreSubmit);
+
+modalCreateStore.addEventListener('click', (e) => {
+    if (e.target === modalCreateStore) closeCreateStoreModal();
+});
+
+// Store Sales Modal Functions
+async function openCreateStoreModal() {
+    modalCreateStore.classList.add('active');
+
+    // Generate next shipping number
+    const nextNumber = await getNextStoreShippingNumber();
+    document.getElementById('storeNumeroEnvio').value = nextNumber;
+
+    // Reset form
+    formCreateStore.reset();
+    document.getElementById('storeNumeroEnvio').value = nextNumber; // Restore after reset
+}
+
+function closeCreateStoreModal() {
+    modalCreateStore.classList.remove('active');
+    formCreateStore.reset();
+}
+
+async function getNextStoreShippingNumber() {
+    try {
+        // Get the counter from Firestore
+        const counterRef = doc(db, 'counters', 'store_shipping');
+        const counterSnap = await getDoc(counterRef);
+
+        let nextNumber = 1001; // Start at VT-1001
+
+        if (counterSnap.exists()) {
+            nextNumber = counterSnap.data().current + 1;
+        }
+
+        return `VT-${nextNumber}`;
+    } catch (error) {
+        console.error('Error getting next shipping number:', error);
+        return 'VT-1001';
+    }
+}
+
+async function handleCreateStoreSubmit(e) {
+    e.preventDefault();
+
+    try {
+        const numeroEnvio = document.getElementById('storeNumeroEnvio').value;
+        const destinatario = document.getElementById('storeDestinatario').value.trim();
+        const celular = document.getElementById('storeCelular').value.trim();
+        const direccion = document.getElementById('storeDireccion').value.trim();
+        const ciudad = document.getElementById('storeCiudad').value.trim();
+
+        // Validate
+        if (!destinatario || !celular || !direccion || !ciudad) {
+            showNotification('Por favor completa todos los campos', 'error');
+            return;
+        }
+
+        // Disable submit button
+        const submitBtn = formCreateStore.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Creando...';
+
+        // Extract number from VT-XXXX
+        const numberPart = parseInt(numeroEnvio.replace('VT-', ''));
+
+        // Create order object
+        const newOrder = {
+            numero_envio: numeroEnvio,
+            numero_serial: await getNextSerial(),
+            origen: 'tienda',
+            destinatario: destinatario,
+            celular: celular,
+            direccion: direccion,
+            ciudad: ciudad,
+            distrito: '', // No district for store sales
+            estado: 'pendiente',
+            repartidor_nombre: '',
+            repartidor_id: '',
+            fecha_creacion: serverTimestamp(),
+            fecha_entrega: null,
+            recibido_por: '',
+            evidencia_url: '',
+            numero_venta: '', // Store sales don't have sales number
+            referencia: '' // Store sales don't have reference
+        };
+
+        // Save to Firestore
+        await addDoc(collection(db, 'pedidos'), newOrder);
+
+        // Update counter
+        const counterRef = doc(db, 'counters', 'store_shipping');
+        await setDoc(counterRef, { current: numberPart }, { merge: true });
+
+        showNotification('✅ Pedido creado exitosamente', 'success');
+        closeCreateStoreModal();
+
+    } catch (error) {
+        console.error('Error creating store order:', error);
+        showNotification('Error al crear el pedido', 'error');
+
+        // Re-enable submit button
+        const submitBtn = formCreateStore.querySelector('button[type="submit"]');
+        submitBtn.disabled = false;
+        submitBtn.textContent = '✅ Crear Pedido';
+    }
+}
+
+
 // Helper function to load image as base64
 function loadImageAsBase64(url) {
     return new Promise((resolve, reject) => {
@@ -465,10 +592,10 @@ async function generarEtiquetaWixPDF(pedido) {
 // Wrapper function to generate label from order ID
 window.generarEtiquetaWix = async function (orderId) {
     const order = allOrders.find(o => o.id === orderId);
-    if (order && order.origen === 'wix') {
+    if (order && (order.origen === 'wix' || order.origen === 'tienda')) {
         await generarEtiquetaWixPDF(order);
     } else {
-        showNotification('Pedido no encontrado o no es de Wix', 'error');
+        showNotification('Pedido no encontrado o no es de Wix/Tienda', 'error');
     }
 };
 
@@ -926,12 +1053,13 @@ function renderOrders() {
 
     // Determine which table layout to show based on origin
     const showingOnlyWix = currentOriginFilter === 'wix';
+    const showingOnlyTienda = currentOriginFilter === 'tienda';
     const showingOnlyFlex = currentOriginFilter === 'flex';
 
     // Update table header based on filter
     const ordersTableHead = document.getElementById('ordersTableHead');
-    if (showingOnlyWix) {
-        // Wix columns: Serial | Origen | N° Envío | Destinatario | Celular | Dirección | Contraentrega | Estado | Repartidor | Fecha Entrega | Recibido por | Acciones
+    if (showingOnlyWix || showingOnlyTienda) {
+        // Wix/Tienda columns: Serial | Origen | N° Envío | Destinatario | Celular | Dirección | Contraentrega | Estado | Repartidor | Fecha Entrega | Recibido por | Acciones
         ordersTableHead.innerHTML = `
             <tr>
                 <th>Serial</th>
@@ -998,9 +1126,10 @@ function renderOrders() {
     } else {
         ordersTableBody.innerHTML = filteredOrders.map(order => {
             const isWix = order.origen === 'wix';
+            const isTienda = order.origen === 'tienda';
 
-            if (showingOnlyWix || isWix) {
-                // Wix row format
+            if (showingOnlyWix || showingOnlyTienda || isWix || isTienda) {
+                // Wix/Tienda row format (both use same format)
                 return `
                     <tr>
                         <td><strong>#${order.numero_serial}</strong></td>
@@ -1093,6 +1222,9 @@ function getOrigenBadge(origen) {
     const origenValue = origen || 'flex';
     if (origenValue === 'wix') {
         return '<span class="badge-wix">🛒 Wix</span>';
+    }
+    if (origenValue === 'tienda') {
+        return '<span class="badge-tienda">🏪 Venta en Tienda</span>';
     }
     return '<span class="badge-flex">📦 Flex</span>';
 }

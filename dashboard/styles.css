@@ -694,6 +694,15 @@ body {
     font-weight: 600;
 }
 
+.badge-tienda {
+    background-color: #fff3e0;
+    color: #e65100;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
 .import-status {
     text-align: center;
     padding: 2rem;

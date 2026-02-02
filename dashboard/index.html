@@ -28,8 +28,9 @@
                 <img src="logo_halcon.png" alt="Halcón" class="header-logo">
             </div>
             <div class="header-buttons">
-                <button class="btn btn-primary" id="btnCreateOrder">➕ Crear Nuevo Pedido</button>
-                <button class="btn btn-secondary" id="btnImportWix">🛒 Importar Wix</button>
+                <button class="btn btn-primary" id="btnCreateOrder">🛒 Crear Flex</button>
+                <button class="btn btn-primary" id="btnImportWix">🛒 Crear Wix</button>
+                <button class="btn btn-primary" id="btnCreateStore">🛒 Crear Venta en Tienda</button>
             </div>
         </div>
     </header>
@@ -78,6 +79,7 @@
                         <div class="filter-buttons">
                             <button class="filter-btn filter-origin active" data-filter="flex">📦 Flex</button>
                             <button class="filter-btn filter-origin" data-filter="wix">🛒 Wix</button>
+                            <button class="filter-btn filter-origin" data-filter="tienda">🏪 Venta en Tienda</button>
                         </div>
                     </div>
 
@@ -230,6 +232,50 @@
             </div>
         </div>
     </div>
+
+    <!-- Modal: Create Store Sale -->
+    <div id="modalCreateStore" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🏪 Crear Venta en Tienda</h2>
+                <button class="modal-close" id="btnCloseStoreModal">&times;</button>
+            </div>
+            <form id="formCreateStore">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="storeNumeroEnvio">N° Envío (Auto-generado)</label>
+                        <input type="text" id="storeNumeroEnvio" class="form-control" readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="storeDestinatario">Destinatario *</label>
+                        <input type="text" id="storeDestinatario" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="storeCelular">Celular *</label>
+                        <input type="tel" id="storeCelular" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="storeDireccion">Dirección *</label>
+                        <input type="text" id="storeDireccion" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="storeCiudad">Ciudad *</label>
+                        <input type="text" id="storeCiudad" class="form-control" required>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="btnCancelStore">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">✅ Crear Pedido</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
 
     <!-- Modal: View Image -->
     <div id="modalViewImage" class="modal">
