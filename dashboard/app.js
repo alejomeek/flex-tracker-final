@@ -346,7 +346,7 @@ async function handleCreateStoreSubmit(e) {
         // Create order object
         const newOrder = {
             numero_envio: numeroEnvio,
-            numero_serial: await getNextSerial(),
+            numero_serial: await getNextSerialNumber(),
             origen: 'tienda',
             destinatario: destinatario,
             celular: celular,
