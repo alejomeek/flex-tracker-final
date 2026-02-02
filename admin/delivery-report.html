@@ -562,13 +562,15 @@
                 const startDate = new Date(year, month - 1, 1);
                 const endDate = new Date(year, month, 0, 23, 59, 59);
 
-                // Load pedidos from both collections
+                // Load pedidos from all collections
                 const flexSnapshot = await getDocs(collection(db, 'pedidos_flex'));
                 const wixSnapshot = await getDocs(collection(db, 'pedidos_wix'));
+                const tiendaSnapshot = await getDocs(collection(db, 'pedidos_tienda'));
 
                 const allPedidos = [
                     ...flexSnapshot.docs.map(doc => ({ id: doc.id, origen: 'flex', ...doc.data() })),
-                    ...wixSnapshot.docs.map(doc => ({ id: doc.id, origen: 'wix', ...doc.data() }))
+                    ...wixSnapshot.docs.map(doc => ({ id: doc.id, origen: 'wix', ...doc.data() })),
+                    ...tiendaSnapshot.docs.map(doc => ({ id: doc.id, origen: 'tienda', ...doc.data() }))
                 ];
 
                 // Filter pedidos
@@ -676,7 +678,9 @@
                 visitsMap.get(key).pedidos.push({
                     serial: pedido.numero_serial,
                     numero_envio: pedido.numero_envio,
-                    origen: pedido.origen
+                    origen: pedido.origen,
+                    pago_contraentrega: pedido.pago_contraentrega,
+                    monto_cobrar: pedido.monto_cobrar
                 });
             });
 
@@ -703,6 +707,15 @@
                 rep.visits.push(visit);
                 rep.totalVisits++;
                 rep.totalPedidos += visit.pedidos.length;
+
+                // Calculate COD stats
+                visit.pedidos.forEach(p => {
+                    if (p.pago_contraentrega) {
+                        rep.codCount += 1;
+                        rep.codAmount += (parseFloat(p.monto_cobrar) || 0);
+                    }
+                });
+
                 if (visit.pedidos.length > 1) {
                     rep.multipleVisits++;
                 }
@@ -835,10 +848,13 @@
 
             // Sheet 1: Detailed visits
             const detailData = [];
-            detailData.push(['Repartidor', 'Fecha', 'Cliente', 'Dirección', 'Distrito', 'Pedidos', 'Cant. Pedidos', 'Visitas Pagables']);
+            detailData.push(['Repartidor', 'Fecha', 'Cliente', 'Dirección', 'Distrito', 'Pedidos', 'Cant. Pedidos', 'Origen', 'Contraentrega', 'Visitas Pagables']);
 
             reportData.forEach(repartidor => {
                 repartidor.visits.forEach(visit => {
+                    // Calculate COD amount for this visit
+                    const codAmount = visit.pedidos.reduce((sum, p) => sum + (p.pago_contraentrega ? (parseFloat(p.monto_cobrar) || 0) : 0), 0);
+
                     detailData.push([
                         repartidor.nombre,
                         formatDateDisplay(visit.fecha),
@@ -847,6 +863,8 @@
                         visit.distrito || '',
                         visit.pedidos.map(p => `#${p.serial}`).join(', '),
                         visit.pedidos.length,
+                        visit.pedidos.map(p => p.origen === 'wix' ? 'Wix' : p.origen === 'tienda' ? 'Tienda' : 'Flex').join(', '),
+                        codAmount > 0 ? codAmount : 'No aplica',
                         1
                     ]);
                 });
@@ -857,14 +875,16 @@
 
             // Sheet 2: Summary by repartidor
             const summaryData = [];
-            summaryData.push(['Repartidor', 'Total Visitas', 'Total Pedidos', 'Visitas Múltiples']);
+            summaryData.push(['Repartidor', 'Total Visitas', 'Total Pedidos', 'Visitas Múltiples', 'Pedidos Contraentrega', 'Valor Contraentrega']);
 
             reportData.forEach(repartidor => {
                 summaryData.push([
                     repartidor.nombre,
                     repartidor.totalVisits,
                     repartidor.totalPedidos,
-                    repartidor.multipleVisits
+                    repartidor.multipleVisits,
+                    repartidor.codCount,
+                    repartidor.codAmount
                 ]);
             });
 
@@ -1001,6 +1021,9 @@
                     // Table data
                     const tableData = [];
                     repartidor.visits.forEach(visit => {
+                        // Calculate COD amount for this visit
+                        const codAmount = visit.pedidos.reduce((sum, p) => sum + (p.pago_contraentrega ? (parseFloat(p.monto_cobrar) || 0) : 0), 0);
+
                         tableData.push([
                             formatDateDisplay(visit.fecha),
                             visit.destinatario,
@@ -1008,13 +1031,15 @@
                             visit.distrito || '-',
                             visit.pedidos.map(p => `#${p.serial}`).join(', '),
                             visit.pedidos.length.toString(),
+                            visit.pedidos.map(p => p.origen === 'wix' ? 'Wix' : p.origen === 'tienda' ? 'Tienda' : 'Flex').join(', '),
+                            codAmount > 0 ? codAmount.toLocaleString() : 'No aplica',
                             '1'
                         ]);
                     });
 
                     doc.autoTable({
                         startY: yPos,
-                        head: [['Fecha', 'Cliente', 'Dirección', 'Distrito', 'Pedidos', 'Cant.', 'Visitas']],
+                        head: [['Fecha', 'Cliente', 'Dirección', 'Distrito', 'Pedidos', 'Cant.', 'Origen', 'COD', 'Visitas']],
                         body: tableData,
                         theme: 'grid',
                         headStyles: {
@@ -1026,13 +1051,15 @@
                             fontSize: 7
                         },
                         columnStyles: {
-                            0: { cellWidth: 20 },
-                            1: { cellWidth: 35 },
-                            2: { cellWidth: 50 },
-                            3: { cellWidth: 25 },
-                            4: { cellWidth: 30 },
-                            5: { cellWidth: 12 },
-                            6: { cellWidth: 13 }
+                            0: { cellWidth: 15 },
+                            1: { cellWidth: 25 },
+                            2: { cellWidth: 35 },
+                            3: { cellWidth: 20 },
+                            4: { cellWidth: 25 },
+                            5: { cellWidth: 10 },
+                            6: { cellWidth: 15 },
+                            7: { cellWidth: 20 },
+                            8: { cellWidth: 10 }
                         },
                         margin: { left: 15, right: 15 },
                         didDrawCell: (data) => {
@@ -1079,11 +1106,14 @@
                 const grandTotalVisits = reportData.reduce((sum, r) => sum + r.totalVisits, 0);
                 const grandTotalPedidos = reportData.reduce((sum, r) => sum + r.totalPedidos, 0);
                 const grandTotalMultiple = reportData.reduce((sum, r) => sum + r.multipleVisits, 0);
+                const grandTotalCODCount = reportData.reduce((sum, r) => sum + r.codCount, 0);
+                const grandTotalCODAmount = reportData.reduce((sum, r) => sum + r.codAmount, 0);
 
                 // Create summary boxes
-                const boxWidth = (pageWidth - 50) / 3;
+                const boxWidth = (pageWidth - 60) / 4; // 4 boxes now
                 const boxHeight = 25;
-                const startX = 20;
+                const startX = 15;
+                const gap = 10;
 
                 // Box 1: Total Visitas
                 doc.setFillColor(239, 246, 255); // Light blue
@@ -1091,38 +1121,56 @@
                 doc.setDrawColor(59, 130, 246);
                 doc.rect(startX, yPos, boxWidth, boxHeight, 'S');
                 doc.setFont('helvetica', 'bold');
-                doc.setFontSize(20);
+                doc.setFontSize(16);
                 doc.setTextColor(59, 130, 246);
-                doc.text(grandTotalVisits.toString(), startX + boxWidth / 2, yPos + 12, { align: 'center' });
-                doc.setFontSize(9);
+                doc.text(grandTotalVisits.toString(), startX + boxWidth / 2, yPos + 10, { align: 'center' });
+                doc.setFontSize(8);
                 doc.setTextColor(75, 85, 99);
-                doc.text('Visitas Pagables', startX + boxWidth / 2, yPos + 20, { align: 'center' });
+                doc.text('Visitas Pagables', startX + boxWidth / 2, yPos + 18, { align: 'center' });
 
                 // Box 2: Total Pedidos
+                let currentX = startX + boxWidth + gap;
                 doc.setFillColor(243, 244, 246); // Light gray
-                doc.rect(startX + boxWidth + 5, yPos, boxWidth, boxHeight, 'F');
+                doc.rect(currentX, yPos, boxWidth, boxHeight, 'F');
                 doc.setDrawColor(107, 114, 128);
-                doc.rect(startX + boxWidth + 5, yPos, boxWidth, boxHeight, 'S');
+                doc.rect(currentX, yPos, boxWidth, boxHeight, 'S');
                 doc.setFont('helvetica', 'bold');
-                doc.setFontSize(20);
+                doc.setFontSize(16);
                 doc.setTextColor(107, 114, 128);
-                doc.text(grandTotalPedidos.toString(), startX + boxWidth + 5 + boxWidth / 2, yPos + 12, { align: 'center' });
-                doc.setFontSize(9);
+                doc.text(grandTotalPedidos.toString(), currentX + boxWidth / 2, yPos + 10, { align: 'center' });
+                doc.setFontSize(8);
                 doc.setTextColor(75, 85, 99);
-                doc.text('Pedidos Entregados', startX + boxWidth + 5 + boxWidth / 2, yPos + 20, { align: 'center' });
+                doc.text('Pedidos Entregados', currentX + boxWidth / 2, yPos + 18, { align: 'center' });
 
                 // Box 3: Visitas Múltiples
+                currentX = startX + (boxWidth + gap) * 2;
                 doc.setFillColor(254, 243, 199); // Light yellow
-                doc.rect(startX + (boxWidth + 5) * 2, yPos, boxWidth, boxHeight, 'F');
+                doc.rect(currentX, yPos, boxWidth, boxHeight, 'F');
                 doc.setDrawColor(251, 191, 36);
-                doc.rect(startX + (boxWidth + 5) * 2, yPos, boxWidth, boxHeight, 'S');
+                doc.rect(currentX, yPos, boxWidth, boxHeight, 'S');
                 doc.setFont('helvetica', 'bold');
-                doc.setFontSize(20);
+                doc.setFontSize(16);
                 doc.setTextColor(251, 191, 36);
-                doc.text(grandTotalMultiple.toString(), startX + (boxWidth + 5) * 2 + boxWidth / 2, yPos + 12, { align: 'center' });
-                doc.setFontSize(9);
+                doc.text(grandTotalMultiple.toString(), currentX + boxWidth / 2, yPos + 10, { align: 'center' });
+                doc.setFontSize(8);
                 doc.setTextColor(75, 85, 99);
-                doc.text('Visitas Múltiples', startX + (boxWidth + 5) * 2 + boxWidth / 2, yPos + 20, { align: 'center' });
+                doc.text('Visitas Múltiples', currentX + boxWidth / 2, yPos + 18, { align: 'center' });
+
+                // Box 4: Contraentregas
+                currentX = startX + (boxWidth + gap) * 3;
+                doc.setFillColor(254, 226, 226); // Light red
+                doc.rect(currentX, yPos, boxWidth, boxHeight, 'F');
+                doc.setDrawColor(248, 113, 113);
+                doc.rect(currentX, yPos, boxWidth, boxHeight, 'S');
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(12);
+                doc.setTextColor(185, 28, 28);
+                // Format currency
+                const currencyFormatter = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
+                doc.text(currencyFormatter.format(grandTotalCODAmount), currentX + boxWidth / 2, yPos + 10, { align: 'center' });
+                doc.setFontSize(8);
+                doc.setTextColor(75, 85, 99);
+                doc.text(`Contraentregas (${grandTotalCODCount})`, currentX + boxWidth / 2, yPos + 18, { align: 'center' });
 
                 yPos += boxHeight + 5;
                 doc.setTextColor(0, 0, 0);
