@@ -12,7 +12,7 @@ export default async function handler(req, res) {
     const WIX_SITE_ID = "a290c1b4-e593-4126-ae4e-675bd07c1a42";
 
     try {
-        // Call Wix API
+        // Call Wix API - only fetch PAID orders
         const response = await fetch('https://www.wixapis.com/ecom/v1/orders/search', {
             method: 'POST',
             headers: {
@@ -22,6 +22,9 @@ export default async function handler(req, res) {
             },
             body: JSON.stringify({
                 search: {
+                    filter: {
+                        "paymentStatus": "PAID"
+                    },
                     cursorPaging: {
                         limit: 100
                     }
@@ -35,7 +38,7 @@ export default async function handler(req, res) {
 
         const data = await response.json();
 
-        // Return orders to frontend
+        // Return only PAID orders to frontend
         return res.status(200).json({
             success: true,
             orders: data.orders || []
