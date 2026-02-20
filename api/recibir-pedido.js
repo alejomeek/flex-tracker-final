@@ -44,7 +44,48 @@ export default async function handler(req, res) {
     }
 
     try {
-        // 1. Incrementar contador atómicamente
+        // 1. Verificar duplicado: buscar numero_envio en pedidos_wix y pedidos_flex
+        const queryUrl = `${BASE_URL}:runQuery?key=${FIREBASE_API_KEY}`;
+        const duplicateFilter = {
+            structuredQuery: {
+                where: {
+                    fieldFilter: {
+                        field: { fieldPath: 'numero_envio' },
+                        op: 'EQUAL',
+                        value: { stringValue: pedido.numero_envio },
+                    },
+                },
+                limit: 1,
+            },
+        };
+
+        for (const col of ['pedidos_wix', 'pedidos_flex']) {
+            const dupRes = await fetch(queryUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ...duplicateFilter,
+                    structuredQuery: {
+                        ...duplicateFilter.structuredQuery,
+                        from: [{ collectionId: col }],
+                    },
+                }),
+            });
+            if (dupRes.ok) {
+                const dupData = await dupRes.json();
+                // runQuery returns array; first element has 'document' if found
+                if (dupData[0]?.document) {
+                    const existingSerial = dupData[0].document.fields?.numero_serial?.integerValue;
+                    return res.status(409).json({
+                        error: `Pedido ya existe en Halcon con serial #${existingSerial}`,
+                        numero_serial: existingSerial ? parseInt(existingSerial) : null,
+                        already_exists: true,
+                    });
+                }
+            }
+        }
+
+        // 2. Incrementar contador atómicamente
         const commitUrl = `${BASE_URL}:commit?key=${FIREBASE_API_KEY}`;
         const commitBody = {
             writes: [{
