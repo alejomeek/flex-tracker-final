@@ -112,6 +112,7 @@ export default async function handler(req, res) {
                     destinatario:         { stringValue: pedido.destinatario },
                     telefono:             { stringValue: pedido.celular || '' },
                     direccion:            { stringValue: pedido.direccion || '' },
+                    referencia:           { stringValue: pedido.referencia || '' },
                     distrito:             { stringValue: pedido.ciudad || '' },
                     estado:               { stringValue: 'pendiente' },
                     fecha_creacion:       { timestampValue: new Date().toISOString() },
