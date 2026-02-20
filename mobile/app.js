@@ -400,11 +400,6 @@ async function searchPedido(scannedText) {
                 return;
             }
 
-            if (currentPedido.estado === 'no_entregado') {
-                showNotification('Este pedido fue marcado como no entregado', 'warning');
-                return;
-            }
-
             showPedidoDetails();
             showScreen('pedido');
             return;
@@ -435,10 +430,7 @@ async function searchPedido(scannedText) {
                 return;
             }
 
-            if (currentPedido.estado === 'no_entregado') {
-                showNotification('Este pedido fue marcado como no entregado', 'warning');
-                return;
-            }
+
 
             showPedidoDetails();
             showScreen('pedido');
@@ -470,10 +462,7 @@ async function searchPedido(scannedText) {
                 return;
             }
 
-            if (currentPedido.estado === 'no_entregado') {
-                showNotification('Este pedido fue marcado como no entregado', 'warning');
-                return;
-            }
+
 
             showPedidoDetails();
             showScreen('pedido');
@@ -614,6 +603,10 @@ async function handleMarkDelivered() {
             imagen_evidencia_url: imageUrl,
             recibido_por: receiverName
         });
+
+        // Notificar al OMS (fire & forget — no bloquea la entrega)
+        fetch('https://oms-jugando-educando.vercel.app/api/sync-halcon-status')
+            .catch(() => {});
 
         // Show confirmation
         confirmationMessage.textContent =
