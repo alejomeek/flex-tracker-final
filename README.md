@@ -230,7 +230,7 @@ service cloud.firestore {
 - Modo offline solo para UI, no para datos
 - Sin notificaciones push
 - Compresión de imágenes a max 1200px y 80% calidad
-- Límite de tamaño de imagen: 5MB
+- Límite de tamaño de imagen: 20MB
 
 ## ✅ Checklist de Funcionalidades
 
@@ -254,7 +254,7 @@ service cloud.firestore {
 ### Las imágenes no se suben
 - Verifica la conexión a internet
 - Revisa las reglas de Firebase Storage
-- Comprueba el tamaño de la imagen (max 5MB)
+- Comprueba el tamaño de la imagen (max 20MB)
 
 ### El QR no escanea
 - Asegúrate de tener buena iluminación

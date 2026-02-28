@@ -523,9 +523,9 @@ function handlePhotoCapture(e) {
         return;
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-        showNotification('La imagen es muy grande (máx 5MB)', 'error');
+    // Validate file size (max 20MB)
+    if (file.size > 20 * 1024 * 1024) {
+        showNotification('La imagen es muy grande (máx 20MB)', 'error');
         return;
     }
 
@@ -590,7 +590,8 @@ async function handleMarkDelivered() {
         const fileName = `evidencias/${currentPedido.id}_${timestamp}.jpg`;
         const storageRef = ref(storage, fileName);
 
-        await uploadBytes(storageRef, compressedImage);
+        const metadata = { contentType: 'image/jpeg' };
+        await uploadBytes(storageRef, compressedImage, metadata);
         const imageUrl = await getDownloadURL(storageRef);
 
         // Update pedido in Firestore (correct collection)
@@ -606,7 +607,7 @@ async function handleMarkDelivered() {
 
         // Notificar al OMS (fire & forget — no bloquea la entrega)
         fetch('https://oms-jugando-educando.vercel.app/api/sync-halcon-status')
-            .catch(() => {});
+            .catch(() => { });
 
         // Show confirmation
         confirmationMessage.textContent =
